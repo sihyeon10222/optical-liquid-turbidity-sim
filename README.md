@@ -2,11 +2,15 @@
 
 대학 물리학과 AI 코딩 과제의 06번 프로젝트입니다. 레이저 출력이 20% 낮아진 합성 미지 시료를 대상으로, 주변광 차분과 참조광 보정이 투과율 추정에 얼마나 영향을 주는지 확인했습니다. 미지 시료의 상대 농도는 **64.9599%**로 추정됐고, 시뮬레이션에 넣은 65.0000%와의 차이는 **0.0401%p**였습니다.
 
-## Mac과 Windows에서 실행
+## 웹에서 바로 실행
 
-1. [HTML 파일 다운로드](https://github.com/sihyeon10222/optical-liquid-turbidity-sim/releases/download/v1.0.0/liquid-simulator.html)를 눌러 `liquid-simulator.html`을 저장합니다.
-2. 받은 파일을 더블클릭해 Chrome, Edge 또는 Safari로 엽니다. Python 설치나 인터넷 연결 없이 실행됩니다.
-3. 상대 농도와 레이저 출력을 움직여 투과율 보정 전후, 검량선과 회절 무늬를 비교합니다. 출력을 0%로 낮추면 참조광이 약할 때의 동작을 확인할 수 있습니다.
+[**액체 오염도 간이 측정기 시뮬레이터 열기**](https://sihyeon10222.github.io/optical-liquid-turbidity-sim/)
+
+오프라인에서는 [HTML 파일](https://github.com/sihyeon10222/optical-liquid-turbidity-sim/releases/download/v1.1.0/liquid-simulator.html)을 받아 실행할 수 있습니다.
+
+3D 장치에서 빛이 시료와 참조 경로로 나뉘는 모습을 확인합니다. 상대 농도를 높이면 큐벳을 지난 시료 쪽 광량이 줄고 스크린의 회절 무늬가 달라집니다. 출력을 0%로 낮추면 빛이 꺼지고 농도 추정이 중단됩니다.
+
+**빛 움직임 일시정지**를 누르면 현재 장면에서 장치와 빛의 경로를 살펴볼 수 있습니다. 빛의 이동 속도와 경로 색은 이해를 돕기 위한 표현입니다. 두 경로의 광량 표시는 각 경로의 최대값에 대한 상대값입니다.
 
 브라우저판은 아래 Python판과 같은 감쇠·보정·회절식을 사용하고, 센서 잡음은 JavaScript에서 별도의 고정 시드로 생성합니다. 아래 그림과 표는 Python판의 결과입니다.
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>액체 오염도 측정 시뮬레이터</title>
+  <title>액체 오염도 간이 측정기 시뮬레이터</title>
   <style>
     :root {
       color-scheme: light;
@@ -39,6 +39,20 @@
     button:hover { background: #e5f5f2; }
     button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #20897f; outline-offset: 3px; }
     .hint { color: var(--muted); font-size: .83rem; }
+    .stage { margin-top: 1rem; padding: 1.15rem; border: 1px solid #253c51; border-radius: 14px; background: radial-gradient(ellipse at 64% 38%, #1c3449, #101d2f 66%); color: #f0f6ff; }
+    .stage header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; }
+    .stage .eyebrow { color: #92e5e1; font-size: .75rem; margin-bottom: .25rem; }
+    .stage button { color: #eef8ff; background: #20364b; border-color: #57718a; }
+    .stage button:hover { background: #2c4b64; }
+    .stage canvas { display: block; width: 100%; height: clamp(185px, 33vw, 344px); }
+    .light-readout { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .55rem .7rem; border-radius: 8px; background: #0c1829; color: #dae7f3; font-size: .84rem; }
+    .light-readout output { color: #f0f6ff; }
+    .light-readout i { display: inline-block; width: .5rem; height: .5rem; margin-right: .3rem; border-radius: 50%; background: #ff8993; }
+    .light-readout .reference i { background: #84e9fc; }
+    .light-readout #beam-status { margin-left: auto; color: #bacde0; }
+    .stage-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .45rem .85rem; padding: 0; margin: .8rem 0 .55rem; color: #e1ebf7; font-size: .8rem; }
+    .stage-legend b { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; margin-right: .27rem; border: 1px solid #5b7a94; border-radius: 50%; color: #d9f2ff; font-size: .66rem; }
+    .stage-note { color: #b9ccdf; font-size: .77rem; }
     .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: .95rem 0; }
     .metric { padding: .85rem .95rem; }
     .metric.accent { background: var(--teal-bg); border-color: #c6e8df; }
@@ -69,6 +83,8 @@
       main { width: calc(100% - 1.25rem); }
       .sliders { grid-template-columns: 1fr; gap: .6rem; }
       .panel { padding: .8rem; }
+      .stage { padding: .85rem; }
+      .light-readout #beam-status { margin-left: 0; }
       .metrics { gap: .4rem; }
       .metric { padding: .65rem .5rem; }
       .metric span { font-size: .76rem; }
@@ -80,7 +96,7 @@
   <main>
     <header>
       <p class="eyebrow">물리학과 AI 코딩 과제 · 06 광학</p>
-      <h1>액체 오염도 측정 시뮬레이터</h1>
+      <h1>액체 오염도 간이 측정기 시뮬레이터</h1>
       <p class="intro">시료 농도와 광원 출력을 바꾸고, 참조광 보정이 투과율과 농도 추정에 주는 영향을 살펴봅니다.</p>
     </header>
 
@@ -102,6 +118,27 @@
         </div>
       </div>
       <p class="hint">출력을 0%까지 내리면 참조 신호가 부족할 때 추정이 어떻게 중단되는지 확인할 수 있습니다.</p>
+    </section>
+
+    <section class="stage" aria-labelledby="stage-title">
+      <header>
+        <div>
+          <p class="eyebrow">움직이는 3D 장면</p>
+          <h2 id="stage-title">레이저의 시료 경로와 참조 경로</h2>
+        </div>
+        <button id="beam-toggle" type="button">빛 움직임 일시정지</button>
+      </header>
+      <canvas id="optical-bench" role="img" aria-label="레이저가 두 갈래로 나뉘는 3D 광학 장치. 시료 빛은 큐벳과 슬릿을 지나 스크린에 도달하고 참조 빛은 큐벳을 우회합니다."></canvas>
+      <div class="light-readout" aria-label="경로별 상대 광량">
+        <span><i aria-hidden="true"></i>시료 도달 <output id="scene-sample-light">—</output></span>
+        <span class="reference"><i aria-hidden="true"></i>참조 도달 <output id="scene-reference-light">—</output></span>
+        <span id="beam-status"></span>
+      </div>
+      <ol class="stage-legend" aria-label="장치 이름">
+        <li><b>1</b>레이저</li><li><b>2</b>빔 스플리터</li><li><b>3</b>시료 큐벳</li>
+        <li><b>4</b>단일 슬릿</li><li><b>5</b>회절 스크린</li><li><b>6</b>참조 센서</li>
+      </ol>
+      <p class="stage-note">빛의 이동은 경로를 쉽게 볼 수 있게 느리게 표시합니다. 색은 경로를 구분하고, 광량은 각 경로의 최대 광량을 기준으로 표시합니다.</p>
     </section>
 
     <section class="metrics" aria-label="시뮬레이션 결과">
@@ -256,6 +293,202 @@
       return (center - fringe) / (center + fringe);
     }
 
+    const benchCanvas = byId("optical-bench");
+    const bench = benchCanvas.getContext("2d");
+    const beamToggle = byId("beam-toggle");
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    let beamPlaying = !reducedMotion.matches;
+    let beamFrame = null;
+    let previousBeamTime = null;
+    let beamTime = 0;
+    let sceneConcentration = 0;
+    let sceneLaser = 0;
+
+    function drawBench() {
+      if (!bench) return;
+      const { width, height } = benchCanvas.getBoundingClientRect();
+      if (!width || !height) return;
+      const ratio = Math.min(devicePixelRatio || 1, 2);
+      const pixelsWide = Math.round(width * ratio);
+      const pixelsHigh = Math.round(height * ratio);
+      if (benchCanvas.width !== pixelsWide || benchCanvas.height !== pixelsHigh) {
+        benchCanvas.width = pixelsWide;
+        benchCanvas.height = pixelsHigh;
+      }
+      bench.setTransform(ratio, 0, 0, ratio, 0, 0);
+      bench.clearRect(0, 0, width, height);
+
+      const scale = Math.min(width / 11, height / 4.8);
+      // A fixed orthographic camera looks down onto the optical bench.
+      const project = ([x, y, z]) => [width / 2 + (0.893 * x - 0.45 * z - 3.72) * scale,
+        height / 2 + (-0.167 * x - 0.332 * z - 0.928 * y + 1.91) * scale];
+      const polygon = (points, fill, stroke) => {
+        bench.beginPath();
+        bench.moveTo(...project(points[0]));
+        points.slice(1).forEach((point) => bench.lineTo(...project(point)));
+        bench.closePath();
+        bench.fillStyle = fill;
+        bench.fill();
+        if (stroke) {
+          bench.lineWidth = 1;
+          bench.strokeStyle = stroke;
+          bench.stroke();
+        }
+      };
+      const line = (start, end, color, thickness = 1) => {
+        bench.beginPath();
+        bench.moveTo(...project(start));
+        bench.lineTo(...project(end));
+        bench.strokeStyle = color;
+        bench.lineWidth = thickness;
+        bench.lineCap = "round";
+        bench.stroke();
+      };
+      const box = (x0, x1, y0, y1, z0, z1, [top, front, left], edge) => {
+        polygon([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]], top, edge);
+        polygon([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0]], front, edge);
+        polygon([[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]], left, edge);
+      };
+      const dot = (point, radius, color) => {
+        bench.beginPath();
+        bench.arc(...project(point), radius, 0, 2 * Math.PI);
+        bench.fillStyle = color;
+        bench.fill();
+      };
+      const mount = (x, z, height) => {
+        box(x-.29, x+.29, 0, .12, z-.3, z+.3, ["#57708a", "#2d435a", "#23374e"]);
+        box(x-.073, x+.073, .12, height, z-.073, z+.073, ["#7491ab", "#465f7a", "#293f56"]);
+      };
+      const label = (number, point) => {
+        const [x, y] = project(point);
+        dot(point, 8.5, "#0c1829");
+        bench.strokeStyle = "#7796b2";
+        bench.lineWidth = 1;
+        bench.stroke();
+        bench.font = "700 10px system-ui, sans-serif";
+        bench.textAlign = "center";
+        bench.textBaseline = "middle";
+        bench.fillStyle = "#edf7ff";
+        bench.fillText(number, x, y + .5);
+      };
+
+      box(-.25, 9.5, -.18, 0, -1.08, 3.08, ["#283e54", "#15283d", "#172c40"], "#46627c");
+      for (let x = 0; x <= 9.5; x += .5) line([x,0,-1.08], [x,0,3.08], "#38546c");
+      for (let z = -.95; z < 3.08; z += .4) line([-.25,0,z], [9.5,0,z], "#38546c");
+
+      const screenX = 8.65;
+      const beamY = 1.33;
+      mount(8.74, 0, .43);
+      box(screenX, 8.8, .43, 2.23, -.96, .96, ["#506e88", "#29445d", "#122234"], "#6c869d");
+      mount(2.69, 2.59, 1.08);
+      box(2.43, 2.95, 1.08, 1.61, 2.39, 2.86, ["#6c859b", "#304d62", "#233c50"], "#7995a7");
+      mount(6.18, 0, .7);
+      box(6.12, 6.24, .69, 1.96, -.55, .55, ["#71869a", "#2d455d", "#192c41"], "#56728c");
+      line([6.12,1.09,0], [6.12,1.65,0], "#0b1625", Math.max(1.2, scale * .027));
+      mount(4.73, 0, .65);
+      box(4.28, 5.17, .61, .72, -.48, .48, ["#61758b", "#263d55", "#203349"]);
+      mount(2.69, 0, 1.03);
+      mount(.69, 0, 1.05);
+      box(.05, 1.27, 1.05, 1.62, -.35, .35, ["#7190a8", "#364e68", "#253e54"], "#83a0b6");
+      for (let x = .26; x < .92; x += .12) line([x,1.18,-.35], [x,1.46,-.35], "#22374c", 2);
+      dot([1.08,1.36,-.352], 2.2, sceneLaser > 0 ? "#ff929a" : "#8998a6");
+
+      const sampleStrength = sceneLaser * trueTransmission(sceneConcentration);
+      if (sceneLaser > 0) {
+        const beam = (start, end, strength, color, offset = 0) => {
+          const alpha = Math.sqrt(strength);
+          line(start, end, `rgba(${color},${alpha * .20})`, 7);
+          line(start, end, `rgba(${color},${alpha * .8})`, 1.6);
+          const length = Math.hypot(end[0] - start[0], end[2] - start[2]);
+          const step = .93;
+          const movement = ((beamTime * 2.3 - offset) % step + step) % step;
+          const along = (distance) => start.map((value, index) => value + (end[index] - value) * distance / length);
+          for (let d = movement; d < length; d += step) {
+            line(along(Math.max(0, d - .18)), along(d), `rgba(${color},${alpha})`, 4.2);
+            dot(along(d), 1.6, `rgba(255,249,249,${alpha * .96})`);
+          }
+        };
+        const sampleColor = "255,126,139";
+        beam([1.27,beamY,0], [2.43,beamY,0], sceneLaser, sampleColor);
+        beam([2.43,beamY,0], [4.29,beamY,0], sceneLaser, sampleColor, 1.16);
+        beam([2.69,beamY,0], [2.69,beamY,2.39], sceneLaser, "116,230,250", 1.42);
+        beam([4.29,beamY,0], [5.16,beamY,0], sceneLaser * trueTransmission(sceneConcentration / 2), sampleColor, 3.02);
+        beam([5.16,beamY,0], [6.19,beamY,0], sampleStrength, sampleColor, 3.89);
+
+        const pulse = .87 + .13 * Math.sin(beamTime * 8);
+        polygon([[6.22,beamY,0],[screenX,beamY,-.9],[screenX,beamY,.9]], `rgba(255,102,126,${Math.sqrt(sampleStrength) * .15})`);
+        for (let i = -4; i <= 4; i++) {
+          const brightness = sceneLaser * diffraction(i * .003, sceneConcentration);
+          line([6.22,beamY,0], [screenX,beamY,i*.225], `rgba(255,150,166,${Math.sqrt(brightness) * pulse * .41})`);
+        }
+        for (let i = 0; i < 64; i++) {
+          const z0 = -.86 + i * 1.72 / 64;
+          const z1 = z0 + 1.72 / 64;
+          const brightness = sceneLaser * diffraction((z0 + z1) / 2 / .86 * .012, sceneConcentration);
+          polygon([[screenX,.64,z0],[screenX,.64,z1],[screenX,2.02,z1],[screenX,2.02,z0]],
+            `rgba(255,126,145,${Math.sqrt(brightness) * pulse})`);
+        }
+        dot([2.69,beamY,2.389], 4.6, `rgba(129,235,253,${Math.sqrt(sceneLaser) * pulse})`);
+      }
+
+      box(2.43, 2.95, 1.04, 1.62, -.26, .26,
+        ["#a8e9ff75", "#70bedd38", "#9cdaed56"], "#a7def1");
+      line([2.45,1.05,-.263], [2.94,1.60,-.263], "#a4d8e5", 1.4);
+      const liquidAlpha = .16 + sceneConcentration * .43;
+      box(4.32, 5.14, .72, 1.62, -.41, .41,
+        [`rgba(125,217,217,${liquidAlpha})`, `rgba(49,153,156,${liquidAlpha})`, `rgba(86,184,187,${liquidAlpha})`]);
+      box(4.29, 5.17, .70, 2.10, -.46, .46, ["#b5f6fd34", "#8adbe01e", "#98dfe527"], "#a6dce5");
+      if (sceneLaser > 0) {
+        const particles = Math.round(sceneConcentration * 19);
+        for (let i = 0; i < particles; i++) {
+          const x = 4.37 + (i * 47 % 71) / 101;
+          const y = .85 + (i * 29 % 63) / 100 + .025 * Math.sin(beamTime * 3 + i);
+          const z = -.36 + (i * 19 % 72) / 100;
+          dot([x,y,z], 1.15, `rgba(255,207,175,${Math.sqrt(sceneLaser) * .77})`);
+        }
+      }
+
+      label(1, [.61,1.93,0]);
+      label(2, [2.69,1.96,0]);
+      label(3, [4.73,2.44,0]);
+      label(4, [6.19,2.26,0]);
+      label(5, [8.72,2.53,0]);
+      label(6, [2.69,1.93,2.63]);
+    }
+
+    function animateBeam(now) {
+      beamFrame = null;
+      if (previousBeamTime !== null) beamTime += Math.min(.05, (now - previousBeamTime) / 1000);
+      previousBeamTime = now;
+      drawBench();
+      beamFrame = requestAnimationFrame(animateBeam);
+    }
+
+    function refreshBeam() {
+      const moving = beamPlaying && sceneLaser > 0 && Boolean(bench);
+      if (moving && beamFrame === null) beamFrame = requestAnimationFrame(animateBeam);
+      if (!moving) {
+        if (beamFrame !== null) cancelAnimationFrame(beamFrame);
+        beamFrame = null;
+        previousBeamTime = null;
+      }
+      beamToggle.textContent = beamPlaying ? "빛 움직임 일시정지" : "빛 움직임 재생";
+      byId("beam-status").textContent = !sceneLaser ? "레이저 꺼짐" : beamPlaying ? "재생 중" : "일시정지";
+      byId("scene-sample-light").value = (sceneLaser * trueTransmission(sceneConcentration) * 100).toFixed(1) + "%";
+      byId("scene-reference-light").value = (sceneLaser * 100).toFixed(1) + "%";
+      drawBench();
+    }
+
+    beamToggle.addEventListener("click", () => {
+      beamPlaying = !beamPlaying;
+      refreshBeam();
+    });
+    reducedMotion.addEventListener("change", (event) => {
+      if (event.matches) beamPlaying = false;
+      refreshBeam();
+    });
+    new ResizeObserver(drawBench).observe(benchCanvas);
+
     function svgElement(svg, tag, attributes, label) {
       const element = document.createElementNS(svgNamespace, tag);
       for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
@@ -340,6 +573,9 @@
 
       drawCalibration(result);
       drawDiffraction(concentration);
+      sceneConcentration = concentration;
+      sceneLaser = laser;
+      refreshBeam();
     }
 
     byId("concentration").addEventListener("input", update);

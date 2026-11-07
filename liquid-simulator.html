@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>액체 오염도 측정 시뮬레이터</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #16263d;
+      --muted: #4a5c71;
+      --accent: #0f766e;
+      --teal-bg: #effaf7;
+      --blue: #285d93;
+      --amber: #a3561a;
+      --border: #dbe5ed;
+      --grid: #e3ebf0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #f3f6f8;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(68rem, calc(100% - 2rem)); margin: 2rem auto 3rem; }
+    h1, h2, p, figure { margin: 0; }
+    h1 { font-size: clamp(1.65rem, 4vw, 2.65rem); line-height: 1.18; letter-spacing: -.035em; }
+    h2 { font-size: 1.12rem; letter-spacing: -.015em; }
+    p { line-height: 1.55; }
+    .eyebrow { color: var(--accent); font-size: .85rem; font-weight: 750; margin-bottom: .55rem; }
+    .intro { color: var(--muted); margin-top: .65rem; }
+    .panel { min-width: 0; background: white; border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem; }
+    .controls { margin-top: 1.25rem; display: grid; gap: .9rem; }
+    .controls header { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+    .sliders, .plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .controls label { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; color: var(--muted); font-size: .95rem; }
+    output { color: var(--ink); font-weight: 750; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; min-height: 1.65rem; margin: .25rem 0 0; accent-color: var(--accent); }
+    button { border: 1px solid #b8d1d1; border-radius: 8px; background: #f5fbfa; color: #075a54; padding: .45rem .65rem; font: inherit; font-size: .85rem; cursor: pointer; }
+    button:hover { background: #e5f5f2; }
+    button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #20897f; outline-offset: 3px; }
+    .hint { color: var(--muted); font-size: .83rem; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: .95rem 0; }
+    .metric { padding: .85rem .95rem; }
+    .metric.accent { background: var(--teal-bg); border-color: #c6e8df; }
+    .metric span { display: block; color: var(--muted); font-size: .86rem; }
+    .metric strong { display: block; font-size: clamp(1.3rem, 3.5vw, 1.9rem); line-height: 1.28; font-variant-numeric: tabular-nums; margin: .15rem 0; }
+    .status { background: #edf4f8; border-left: 3px solid #86a9bf; color: #30465f; padding: .6rem .8rem; border-radius: 5px; font-size: .9rem; margin-bottom: .95rem; }
+    .status[data-warning="true"] { background: #fff4e7; border-color: var(--amber); color: #714014; }
+    .plots { margin-top: 1rem; }
+    figure .hint { margin-top: .35rem; }
+    .plot { display: block; width: 100%; height: auto; margin-top: .55rem; overflow: visible; }
+    .plot text { fill: var(--muted); font-family: inherit; font-size: 13px; }
+    .plot .axis { stroke: #788da0; stroke-width: 1; }
+    .plot .grid { stroke: var(--grid); stroke-width: 1; }
+    .plot .curve { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+    .legend { display: flex; flex-wrap: wrap; gap: .3rem .75rem; color: var(--muted); font-size: .78rem; }
+    .legend > span { display: inline-flex; align-items: center; gap: .3rem; }
+    .swatch { display: inline-block; width: .8rem; height: .17rem; background: var(--accent); }
+    .swatch.dashed { height: 0; background: transparent; border-top: 2px dashed var(--blue); }
+    .swatch.dot { width: .47rem; height: .47rem; border-radius: 50%; border: 1px solid var(--blue); background: white; }
+    details { margin-top: 1rem; }
+    summary { color: var(--accent); font-weight: 700; cursor: pointer; }
+    details p { margin: .5rem 0 0; font-size: .9rem; color: var(--muted); }
+    @media (max-width: 44rem) {
+      main { margin: 1.2rem auto 2rem; }
+      .plots { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 29rem) {
+      main { width: calc(100% - 1.25rem); }
+      .sliders { grid-template-columns: 1fr; gap: .6rem; }
+      .panel { padding: .8rem; }
+      .metrics { gap: .4rem; }
+      .metric { padding: .65rem .5rem; }
+      .metric span { font-size: .76rem; }
+      .plot text { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">물리학과 AI 코딩 과제 · 06 광학</p>
+      <h1>액체 오염도 측정 시뮬레이터</h1>
+      <p class="intro">시료 농도와 광원 출력을 바꾸고, 참조광 보정이 투과율과 농도 추정에 주는 영향을 살펴봅니다.</p>
+    </header>
+
+    <noscript><p class="status" data-warning="true">이 파일을 실행하려면 브라우저에서 자바스크립트를 허용해야 합니다.</p></noscript>
+
+    <section class="panel controls" aria-labelledby="controls-heading">
+      <header>
+        <h2 id="controls-heading">실험 조건</h2>
+        <button id="reset" type="button">초기값으로</button>
+      </header>
+      <div class="sliders">
+        <div>
+          <label for="concentration">합성 시료의 상대 농도 <output id="concentration-value" for="concentration">65%</output></label>
+          <input type="range" id="concentration" min="0" max="100" step="1" value="65">
+        </div>
+        <div>
+          <label for="laser">미지 시료 측정 시 레이저 출력 <output id="laser-value" for="laser">80%</output></label>
+          <input type="range" id="laser" min="0" max="100" step="1" value="80">
+        </div>
+      </div>
+      <p class="hint">출력을 0%까지 내리면 참조 신호가 부족할 때 추정이 어떻게 중단되는지 확인할 수 있습니다.</p>
+    </section>
+
+    <section class="metrics" aria-label="시뮬레이션 결과">
+      <article class="panel metric accent">
+        <span>추정 상대 농도</span>
+        <strong id="estimate">—</strong>
+        <span id="estimate-note">기지 시료 3점으로 적합</span>
+      </article>
+      <article class="panel metric">
+        <span>투과율 · 보정 전</span>
+        <strong id="raw">—</strong>
+        <span id="raw-note">축상 시료 신호</span>
+      </article>
+      <article class="panel metric">
+        <span>투과율 · 보정 후</span>
+        <strong id="corrected">—</strong>
+        <span id="corrected-note">참조광과 블랭크 적용</span>
+      </article>
+    </section>
+    <p id="status" class="status" role="status"></p>
+
+    <section class="plots" aria-label="실험 그래프">
+      <figure class="panel">
+        <figcaption>
+          <h2>검량선과 미지 시료 추정</h2>
+          <p class="hint">기지 농도 25%, 50%, 100%의 투과율로 감쇠 모델을 적합합니다.</p>
+        </figcaption>
+        <svg id="calibration-plot" class="plot" viewBox="0 0 510 258" role="img" aria-label="합성 시료 농도에 따른 투과율 검량선"></svg>
+        <div class="legend" aria-hidden="true">
+          <span><i class="swatch"></i> 감쇠 모델</span>
+          <span><i class="swatch dot"></i> 블랭크와 기지 시료</span>
+          <span>◆ 미지 시료 추정</span>
+        </div>
+      </figure>
+
+      <figure class="panel">
+        <figcaption>
+          <h2>단일 슬릿 회절 무늬</h2>
+          <p class="hint" id="diffraction-note">기준 출력에서 농도가 만드는 상대 강도 변화입니다.</p>
+        </figcaption>
+        <svg id="diffraction-plot" class="plot" viewBox="0 0 510 258" role="img" aria-label="스크린 위치에 따른 단일 슬릿 회절 강도"></svg>
+        <div class="legend" aria-hidden="true">
+          <span><i class="swatch"></i> 선택한 시료</span>
+          <span><i class="swatch dashed"></i> 블랭크</span>
+        </div>
+      </figure>
+    </section>
+
+    <details class="panel">
+      <summary>계산 모형과 결과의 범위</summary>
+      <p>1 cm 큐벳에서 투과율은 T = exp(−1.6c)로 생성합니다. c는 합성 시료의 상대 농도로 0부터 1까지입니다. 500 Hz로 측정한 센서 전압의 ON/OFF 차분을 구한 다음 시료와 참조의 비를 블랭크로 정규화합니다. 적합한 감쇠 기울기 b를 이용해 −ln(T)/b로 농도를 역산합니다.</p>
+      <p>회절 무늬는 650 nm 빛과 폭 80 μm 슬릿의 프라운호퍼 모형에 가상의 산란 배경을 더해 표시합니다. 모든 수치는 합성 시료와 가상 광센서에서 계산합니다.</p>
+    </details>
+  </main>
+
+  <script>
+    "use strict";
+
+    const wavelength = 650e-9;
+    const slitWidth = 80e-6;
+    const screenDistance = 0.6;
+    const minReference = 0.01;
+    const standards = [0.25, 0.5, 1];
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const colors = { teal: "#0f766e", blue: "#285d93", ink: "#16263d" };
+    const byId = (id) => document.getElementById(id);
+
+    function trueTransmission(concentration) {
+      return Math.exp(-1.6 * concentration);
+    }
+
+    function seededRandom(seed) {
+      let state = seed;
+      return () => {
+        state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+        return (state + 0.5) / 4294967296;
+      };
+    }
+
+    function gaussianNoise(random) {
+      return 0.003 * Math.sqrt(-2 * Math.log(random())) * Math.cos(2 * Math.PI * random());
+    }
+
+    function measure(concentration, laserScale, random) {
+      const cycles = 100;
+      const modulation = 500;
+      const flicker = 120;
+      const phase = 2 * Math.PI * random();
+      const sampleLaserSignal = 1.2 * laserScale * trueTransmission(concentration);
+      const referenceLaserSignal = 0.9 * laserScale;
+      let sampleOnSum = 0;
+      let sampleDeltaSum = 0;
+      let referenceDeltaSum = 0;
+      for (let i = 0; i < cycles; i++) {
+        const timeOn = i / modulation;
+        const timeOff = timeOn + 0.5 / modulation;
+        const onFlicker = Math.sin(2 * Math.PI * flicker * timeOn + phase);
+        const offFlicker = Math.sin(2 * Math.PI * flicker * timeOff + phase);
+        const sampleOn = 0.19 + 0.035 * onFlicker + sampleLaserSignal + gaussianNoise(random);
+        const sampleOff = 0.19 + 0.035 * offFlicker + gaussianNoise(random);
+        const referenceOn = 0.24 + 0.045 * onFlicker + referenceLaserSignal + gaussianNoise(random);
+        const referenceOff = 0.24 + 0.045 * offFlicker + gaussianNoise(random);
+        sampleOnSum += sampleOn;
+        sampleDeltaSum += sampleOn - sampleOff;
+        referenceDeltaSum += referenceOn - referenceOff;
+      }
+      return {
+        sampleOn: sampleOnSum / cycles,
+        sampleDelta: sampleDeltaSum / cycles,
+        referenceDelta: referenceDeltaSum / cycles
+      };
+    }
+
+    const calibrationRandom = seededRandom(42);
+    const blank = measure(0, 1, calibrationRandom);
+    const blankRatio = blank.sampleDelta / blank.referenceDelta;
+    const calibration = standards.map((c) => {
+      const reading = measure(c, 1, calibrationRandom);
+      return [c, reading.sampleDelta / reading.referenceDelta / blankRatio];
+    });
+    const attenuation = calibration.reduce((sum, [c, t]) => sum - c * Math.log(t), 0)
+      / standards.reduce((sum, c) => sum + c * c, 0);
+
+    function estimateSample(concentration, laserScale) {
+      const reading = measure(concentration, laserScale, seededRandom(73));
+      const truth = trueTransmission(concentration);
+      const raw = reading.sampleOn / blank.sampleOn;
+      const result = { truth, raw, referenceDelta: reading.referenceDelta };
+      if (reading.referenceDelta <= minReference) {
+        return { ...result, warning: "참조광이 너무 약해 보정과 농도 추정을 중단했습니다." };
+      }
+      if (reading.sampleDelta <= 0) {
+        return { ...result, warning: "시료 신호가 너무 약해 보정과 농도 추정을 중단했습니다." };
+      }
+      const corrected = reading.sampleDelta / reading.referenceDelta / blankRatio;
+      const estimate = -Math.log(corrected) / attenuation;
+      return { ...result, corrected, estimate };
+    }
+
+    function diffraction(position, concentration) {
+      const angle = Math.atan(position / screenDistance);
+      const phase = Math.PI * slitWidth * Math.sin(angle) / wavelength;
+      const sinc = phase === 0 ? 1 : Math.sin(phase) / phase;
+      const scatter = 0.12 * concentration * Math.exp(-0.5 * (position / 0.007) ** 2);
+      return trueTransmission(concentration) * sinc ** 2 + scatter;
+    }
+
+    function fringeVisibility(concentration) {
+      const firstZero = screenDistance * Math.tan(Math.asin(wavelength / slitWidth));
+      const center = diffraction(0, concentration);
+      const fringe = diffraction(firstZero, concentration);
+      return (center - fringe) / (center + fringe);
+    }
+
+    function svgElement(svg, tag, attributes, label) {
+      const element = document.createElementNS(svgNamespace, tag);
+      for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+      if (label !== undefined) element.textContent = label;
+      svg.append(element);
+    }
+
+    function drawAxes(svg, xTicks, xLabel, yLabel) {
+      const left = 53, right = 491, top = 17, bottom = 205;
+      const min = xTicks[0], max = xTicks[xTicks.length - 1];
+      const x = (value) => left + (value - min) / (max - min) * (right - left);
+      const y = (value) => bottom - value / 1.05 * (bottom - top);
+      svg.replaceChildren();
+      for (let tick = 0; tick <= 5; tick++) {
+        const value = tick / 5;
+        svgElement(svg, "line", { x1: left, x2: right, y1: y(value), y2: y(value), class: "grid" });
+        svgElement(svg, "text", { x: left - 7, y: y(value) + 4, "text-anchor": "end" }, value.toFixed(1));
+      }
+      svgElement(svg, "line", { x1: left, x2: right, y1: bottom, y2: bottom, class: "axis" });
+      svgElement(svg, "line", { x1: left, x2: left, y1: top, y2: bottom, class: "axis" });
+      for (const tick of xTicks) {
+        svgElement(svg, "text", { x: x(tick), y: bottom + 19, "text-anchor": "middle" }, tick);
+      }
+      svgElement(svg, "text", { x: (left + right) / 2, y: bottom + 44, "text-anchor": "middle" }, xLabel);
+      const middle = (top + bottom) / 2;
+      svgElement(svg, "text", { x: 14, y: middle, "text-anchor": "middle", transform: "rotate(-90 14 " + middle + ")" }, yLabel);
+      return { x, y };
+    }
+
+    function drawCurve(svg, axes, from, to, fn, stroke, dashed = false) {
+      const points = [];
+      for (let index = 0; index <= 240; index++) {
+        const value = from + (to - from) * index / 240;
+        points.push(axes.x(value).toFixed(2) + "," + axes.y(fn(value)).toFixed(2));
+      }
+      const attributes = { points: points.join(" "), stroke, class: "curve" };
+      if (dashed) attributes["stroke-dasharray"] = "5 5";
+      svgElement(svg, "polyline", attributes);
+    }
+
+    function drawCalibration(result) {
+      const svg = byId("calibration-plot");
+      const axes = drawAxes(svg, [0, 25, 50, 75, 100], "상대 농도 (%)", "투과율");
+      drawCurve(svg, axes, 0, 100, (c) => Math.exp(-attenuation * c / 100), colors.teal);
+      for (const [c, value] of [[0, 1], ...calibration]) {
+        svgElement(svg, "circle", { cx: axes.x(100 * c), cy: axes.y(value), r: 4, fill: "white", stroke: colors.blue, "stroke-width": 2 });
+      }
+      if (result.estimate >= 0 && result.estimate <= 1) {
+        const cx = axes.x(result.estimate * 100), cy = axes.y(result.corrected);
+        svgElement(svg, "rect", { x: cx - 4.5, y: cy - 4.5, width: 9, height: 9, fill: colors.ink, transform: "rotate(45 " + cx + " " + cy + ")" });
+      }
+    }
+
+    function drawDiffraction(concentration) {
+      const svg = byId("diffraction-plot");
+      const axes = drawAxes(svg, [-12, -8, -4, 0, 4, 8, 12], "스크린 위치 (mm)", "상대 강도");
+      drawCurve(svg, axes, -12, 12, (mm) => diffraction(mm / 1000, 0), colors.blue, true);
+      drawCurve(svg, axes, -12, 12, (mm) => diffraction(mm / 1000, concentration), colors.teal);
+      byId("diffraction-note").textContent = "기준 출력에서의 상대 강도 · 프린지 가시도 " + fringeVisibility(concentration).toFixed(3);
+    }
+
+    function update() {
+      const concentration = byId("concentration").valueAsNumber / 100;
+      const laser = byId("laser").valueAsNumber / 100;
+      const result = estimateSample(concentration, laser);
+      const available = result.estimate !== undefined;
+      byId("concentration-value").value = byId("concentration").value + "%";
+      byId("laser-value").value = byId("laser").value + "%";
+      byId("estimate").textContent = available ? (result.estimate * 100).toFixed(2) + "%" : "—";
+      byId("estimate-note").textContent = available ? "농도 오차 " + (Math.abs(result.estimate - concentration) * 100).toFixed(2) + "%p" : "신호 부족";
+      byId("raw").textContent = result.raw.toFixed(4);
+      byId("raw-note").textContent = "절대 오차 " + Math.abs(result.raw - result.truth).toFixed(4);
+      byId("corrected").textContent = available ? result.corrected.toFixed(4) : "—";
+      byId("corrected-note").textContent = available ? "절대 오차 " + Math.abs(result.corrected - result.truth).toFixed(4) : "신호 부족";
+
+      const outOfRange = available && (result.estimate < 0 || result.estimate > 1);
+      const warning = result.warning || (outOfRange ? "농도 추정값이 검량 범위 0–100%를 벗어났습니다." : "");
+      const status = byId("status");
+      status.dataset.warning = String(Boolean(warning));
+      status.textContent = (warning ? warning + " " : "") + "모델의 참 투과율 " + result.truth.toFixed(4)
+        + " · 참조 차분 전압 " + result.referenceDelta.toFixed(4) + " V";
+
+      drawCalibration(result);
+      drawDiffraction(concentration);
+    }
+
+    byId("concentration").addEventListener("input", update);
+    byId("laser").addEventListener("input", update);
+    byId("reset").addEventListener("click", () => {
+      byId("concentration").value = byId("concentration").defaultValue;
+      byId("laser").value = byId("laser").defaultValue;
+      update();
+    });
+    update();
+  </script>
+</body>
+</html>

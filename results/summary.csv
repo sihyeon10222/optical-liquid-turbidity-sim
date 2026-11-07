@@ -1,0 +1,6 @@
+sample,true_concentration_pct,laser_output_pct,true_transmittance,raw_transmittance,corrected_transmittance,raw_absolute_error,corrected_absolute_error,estimated_concentration_pct,concentration_absolute_error_pp,fringe_visibility
+blank,0.00,100.00,1.000000,1.000000,1.000000,0.000000,0.000000,,,1.000000
+calibration_25%,25.00,100.00,0.670320,0.715424,0.670598,0.045104,0.000278,,,0.934961
+calibration_50%,50.00,100.00,0.449329,0.524352,0.448370,0.075023,0.000959,,,0.830776
+calibration_100%,100.00,100.00,0.201897,0.310900,0.201528,0.109004,0.000369,,,0.547378
+unknown,65.00,80.00,0.353455,0.380656,0.353193,0.027201,0.000261,64.9599,0.0401,0.751542

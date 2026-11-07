@@ -1,9 +1,16 @@
 """Simulate a dual-beam transmission sensor and a single-slit pattern."""
 
+import argparse
+import csv
 from dataclasses import dataclass
+from pathlib import Path
 
+import matplotlib
 import numpy as np
 from numpy.typing import NDArray
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 FloatArray = NDArray[np.float64]
 
@@ -149,28 +156,160 @@ def estimate_concentration(transmittance: float, attenuation: float) -> float:
     return float(-np.log(transmittance) / attenuation)
 
 
+def write_summary(
+    path: Path, readings: list[TransmissionReading], estimate: float
+) -> None:
+    rows = []
+    for reading in readings:
+        truth = true_transmittance(reading.concentration)
+        is_unknown = reading.name == "unknown"
+        rows.append(
+            {
+                "sample": reading.name,
+                "true_concentration_pct": f"{reading.concentration * 100:.2f}",
+                "laser_output_pct": f"{reading.laser_scale * 100:.2f}",
+                "true_transmittance": f"{truth:.6f}",
+                "raw_transmittance": f"{reading.raw_transmittance:.6f}",
+                "corrected_transmittance": f"{reading.corrected_transmittance:.6f}",
+                "raw_absolute_error": f"{abs(reading.raw_transmittance - truth):.6f}",
+                "corrected_absolute_error": f"{abs(reading.corrected_transmittance - truth):.6f}",
+                "estimated_concentration_pct": f"{estimate * 100:.4f}" if is_unknown else "",
+                "concentration_absolute_error_pp": (
+                    f"{abs(estimate - reading.concentration) * 100:.4f}" if is_unknown else ""
+                ),
+                "fringe_visibility": f"{fringe_visibility(reading.concentration):.6f}",
+            }
+        )
+    with path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def plot_results(
+    path: Path, readings: list[TransmissionReading], attenuation: float, estimate: float
+) -> None:
+    blank, *calibration, unknown = readings
+    blue, teal, amber = "#235b96", "#087c6c", "#aa5410"
+    fig, axes = plt.subplots(2, 2, figsize=(10.6, 7.4), layout="constrained")
+    fig.suptitle("Optical liquid measurement simulation", fontsize=19, fontweight="bold")
+    for axis in axes.flat:
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.grid(axis="y", color="#e1e7ed")
+        axis.set_axisbelow(True)
+
+    ax = axes[0, 0]
+    concentration_grid = np.linspace(0.0, 1.0, 200)
+    ax.plot(
+        concentration_grid * 100,
+        np.exp(-attenuation * concentration_grid),
+        color=blue,
+        label="Fitted attenuation",
+    )
+    standards = (blank, *calibration)
+    ax.scatter(
+        [item.concentration * 100 for item in standards],
+        [item.corrected_transmittance for item in standards],
+        facecolor="white",
+        edgecolor=blue,
+        zorder=3,
+        label="Blank and standards",
+    )
+    ax.scatter(
+        estimate * 100,
+        unknown.corrected_transmittance,
+        marker="D",
+        color=teal,
+        zorder=4,
+        label=f"Unknown estimate ({estimate:.2%})",
+    )
+    ax.set(
+        title="A  Calibration and concentration estimate",
+        xlabel="Relative concentration (%)",
+        ylabel="Transmittance",
+        ylim=(0.0, 1.1),
+    )
+    ax.legend(frameon=False, fontsize=8)
+
+    ax = axes[0, 1]
+    truth = true_transmittance(unknown.concentration)
+    bars = ax.bar(
+        ["Before correction", "After correction"],
+        [unknown.raw_transmittance, unknown.corrected_transmittance],
+        color=[amber, teal],
+        width=0.55,
+    )
+    ax.bar_label(bars, fmt="%.4f", padding=4)
+    ax.axhline(truth, color=blue, linestyle="--", label=f"True value ({truth:.4f})")
+    ax.set(
+        title="B  Unknown sample with 20% laser drift",
+        ylabel="Transmittance",
+        ylim=(0.0, 0.52),
+    )
+    ax.legend(loc="upper right", frameon=False, fontsize=8)
+
+    ax = axes[1, 0]
+    positions = np.linspace(-0.012, 0.012, 801)
+    for reading, color in ((blank, blue), (unknown, teal), (calibration[-1], amber)):
+        ax.plot(
+            positions * 1000,
+            diffraction_intensity(positions, reading.concentration),
+            color=color,
+            label=f"{reading.concentration:.0%} synthetic sample",
+        )
+    ax.set(
+        title="C  Single-slit diffraction",
+        xlabel="Screen position (mm)",
+        ylabel="Relative intensity (a.u.)",
+    )
+    ax.legend(frameon=False, fontsize=8)
+
+    ax = axes[1, 1]
+    center_limit_angle = np.arcsin(WAVELENGTH_M / (np.pi * SLIT_WIDTH_M))
+    center_limit_m = SCREEN_DISTANCE_M * np.tan(center_limit_angle)
+    center = np.linspace(-center_limit_m, center_limit_m, 201)
+    difference = (
+        central_taylor_intensity(center, unknown.concentration)
+        - diffraction_intensity(center, unknown.concentration)
+    )
+    ax.plot(center * 1000, difference * 1000, color=teal)
+    ax.fill_between(center * 1000, difference * 1000, color=teal, alpha=0.15)
+    ax.set(
+        title="D  Central Taylor approximation residual",
+        xlabel="Screen position within |β| ≤ 1 (mm)",
+        ylabel="Taylor − exact (10⁻³ a.u.)",
+    )
+    ax.text(
+        0.5,
+        0.79,
+        f"Unknown fringe visibility: {fringe_visibility(unknown.concentration):.3f}",
+        ha="center",
+        transform=ax.transAxes,
+        fontsize=9,
+    )
+    fig.savefig(path, dpi=160, facecolor="white")
+    plt.close(fig)
+
+
 def main() -> None:
-    _, *calibration, unknown = collect_readings()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=Path("results"))
+    args = parser.parse_args()
+    readings = collect_readings()
+    _, *calibration, unknown = readings
     attenuation = fit_attenuation(calibration)
     estimate = estimate_concentration(unknown.corrected_transmittance, attenuation)
-    truth = true_transmittance(unknown.concentration)
-    print(f"Fitted attenuation: {attenuation:.6f}")
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    write_summary(args.output_dir / "summary.csv", readings, estimate)
+    plot_results(args.output_dir / "overview.png", readings, attenuation, estimate)
+
     print(
-        f"Unknown transmission (true / raw / corrected): {truth:.6f} / "
-        f"{unknown.raw_transmittance:.6f} / {unknown.corrected_transmittance:.6f}"
-    )
-    print(
-        "Absolute transmission error (raw / corrected): "
-        f"{abs(unknown.raw_transmittance - truth):.6f} / "
-        f"{abs(unknown.corrected_transmittance - truth):.6f}"
-    )
-    print(
-        f"Estimated concentration: {estimate:.4%} "
+        f"Unknown concentration: {estimate:.4%} "
         f"(absolute error {abs(estimate - unknown.concentration) * 100:.4f} pp)"
     )
     if not 0.0 <= estimate <= max(item.concentration for item in calibration):
         print("Warning: estimate is outside the calibrated range.")
-    print(f"Unknown fringe visibility: {fringe_visibility(unknown.concentration):.6f}")
+    print(f"Saved overview.png and summary.csv to {args.output_dir}")
 
 
 if __name__ == "__main__":

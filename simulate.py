@@ -19,6 +19,7 @@ CYCLE_COUNT = 100
 CALIBRATION_CONCENTRATIONS = (0.25, 0.50, 1.00)
 UNKNOWN_CONCENTRATION = 0.65
 UNKNOWN_LASER_SCALE = 0.80
+MIN_REFERENCE_SIGNAL_V = 0.01
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,15 @@ class SensorTrace:
     sample_off: FloatArray
     reference_on: FloatArray
     reference_off: FloatArray
+
+
+@dataclass(frozen=True)
+class TransmissionReading:
+    name: str
+    concentration: float
+    laser_scale: float
+    raw_transmittance: float
+    corrected_transmittance: float
 
 
 def true_transmittance(concentration: float) -> float:
@@ -49,6 +59,29 @@ def diffraction_intensity(position_m: FloatArray, concentration: float) -> Float
     return coherent_intensity + diffuse_intensity(position_m, concentration)
 
 
+def central_taylor_intensity(
+    position_m: FloatArray, concentration: float
+) -> FloatArray:
+    phase = diffraction_phase(position_m)
+    if np.any(np.abs(phase) > 1.0):
+        raise ValueError("The central diffraction approximation requires |phase| <= 1.")
+    phase_squared = phase**2
+    intensity_factor = 1.0 - phase_squared / 3.0 + 2.0 * phase_squared**2 / 45.0
+    return (
+        true_transmittance(concentration) * intensity_factor
+        + diffuse_intensity(position_m, concentration)
+    )
+
+
+def fringe_visibility(concentration: float) -> float:
+    first_zero_angle = np.arcsin(WAVELENGTH_M / SLIT_WIDTH_M)
+    first_zero_m = SCREEN_DISTANCE_M * np.tan(first_zero_angle)
+    center, first_zero = diffraction_intensity(
+        np.array([0.0, first_zero_m]), concentration
+    )
+    return float((center - first_zero) / (center + first_zero))
+
+
 def measure(
     concentration: float, laser_scale: float, rng: np.random.Generator
 ) -> SensorTrace:
@@ -67,16 +100,77 @@ def measure(
     return SensorTrace(sample_on, sample_off, reference_on, reference_off)
 
 
-def main() -> None:
-    rng = np.random.default_rng(SEED)
-    print("relative_concentration,true_transmittance,sample_on_mean_V")
-    for concentration in (0.0, *CALIBRATION_CONCENTRATIONS, UNKNOWN_CONCENTRATION):
-        scale = UNKNOWN_LASER_SCALE if concentration == UNKNOWN_CONCENTRATION else 1.0
-        trace = measure(concentration, scale, rng)
-        print(f"{concentration:.2f},{true_transmittance(concentration):.6f},{trace.sample_on.mean():.6f}")
+def sample_reference_ratio(trace: SensorTrace) -> float:
+    reference_signal = float(np.mean(trace.reference_on - trace.reference_off))
+    if reference_signal <= MIN_REFERENCE_SIGNAL_V:
+        raise ValueError("Reference signal is too weak for a transmission estimate.")
+    sample_signal = float(np.mean(trace.sample_on - trace.sample_off))
+    if sample_signal <= 0.0:
+        raise ValueError("Sample signal is too weak for a transmission estimate.")
+    return sample_signal / reference_signal
 
-    center_intensity = diffraction_intensity(np.array([0.0]), UNKNOWN_CONCENTRATION)[0]
-    print(f"Unknown sample central diffraction intensity: {center_intensity:.6f} a.u.")
+
+def collect_readings() -> list[TransmissionReading]:
+    rng = np.random.default_rng(SEED)
+    blank = measure(0.0, 1.0, rng)
+    blank_ratio = sample_reference_ratio(blank)
+    readings = [TransmissionReading("blank", 0.0, 1.0, 1.0, 1.0)]
+    cases = [
+        (f"calibration_{concentration:.0%}", concentration, 1.0)
+        for concentration in CALIBRATION_CONCENTRATIONS
+    ]
+    cases.append(("unknown", UNKNOWN_CONCENTRATION, UNKNOWN_LASER_SCALE))
+    for name, concentration, scale in cases:
+        trace = measure(concentration, scale, rng)
+        readings.append(
+            TransmissionReading(
+                name=name,
+                concentration=concentration,
+                laser_scale=scale,
+                raw_transmittance=float(trace.sample_on.mean() / blank.sample_on.mean()),
+                corrected_transmittance=sample_reference_ratio(trace) / blank_ratio,
+            )
+        )
+    return readings
+
+
+def fit_attenuation(calibration: list[TransmissionReading]) -> float:
+    concentrations = np.array([reading.concentration for reading in calibration])
+    optical_depths = -np.log([reading.corrected_transmittance for reading in calibration])
+    attenuation = float(
+        np.dot(concentrations, optical_depths) / np.dot(concentrations, concentrations)
+    )
+    if attenuation <= 0.0:
+        raise ValueError("Calibration does not show positive attenuation.")
+    return attenuation
+
+
+def estimate_concentration(transmittance: float, attenuation: float) -> float:
+    return float(-np.log(transmittance) / attenuation)
+
+
+def main() -> None:
+    _, *calibration, unknown = collect_readings()
+    attenuation = fit_attenuation(calibration)
+    estimate = estimate_concentration(unknown.corrected_transmittance, attenuation)
+    truth = true_transmittance(unknown.concentration)
+    print(f"Fitted attenuation: {attenuation:.6f}")
+    print(
+        f"Unknown transmission (true / raw / corrected): {truth:.6f} / "
+        f"{unknown.raw_transmittance:.6f} / {unknown.corrected_transmittance:.6f}"
+    )
+    print(
+        "Absolute transmission error (raw / corrected): "
+        f"{abs(unknown.raw_transmittance - truth):.6f} / "
+        f"{abs(unknown.corrected_transmittance - truth):.6f}"
+    )
+    print(
+        f"Estimated concentration: {estimate:.4%} "
+        f"(absolute error {abs(estimate - unknown.concentration) * 100:.4f} pp)"
+    )
+    if not 0.0 <= estimate <= max(item.concentration for item in calibration):
+        print("Warning: estimate is outside the calibrated range.")
+    print(f"Unknown fringe visibility: {fringe_visibility(unknown.concentration):.6f}")
 
 
 if __name__ == "__main__":

@@ -6,140 +6,209 @@
   <title>액체 오염도 간이 측정기 시뮬레이터</title>
   <style>
     :root {
-      color-scheme: light;
-      --ink: #16263d;
-      --muted: #4a5c71;
-      --accent: #0f766e;
-      --teal-bg: #effaf7;
-      --blue: #285d93;
-      --amber: #a3561a;
-      --border: #dbe5ed;
-      --grid: #e3ebf0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: dark;
+      --bg: #070f1c;
+      --panel: #0d1a2b;
+      --panel-2: #112238;
+      --line: #213750;
+      --line-2: #2c4864;
+      --ink: #eaf2fb;
+      --muted: #9ab0c6;
+      --accent: #5fe3d0;
+      --laser: #ff6b7d;
+      --ref: #74e6fa;
+      --warn: #f5b45a;
+      font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       color: var(--ink);
-      background: #f3f6f8;
+      background: var(--bg);
+      font-synthesis: none;
     }
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; }
-    main { width: min(68rem, calc(100% - 2rem)); margin: 2rem auto 3rem; }
-    h1, h2, p, figure { margin: 0; }
-    h1 { font-size: clamp(1.65rem, 4vw, 2.65rem); line-height: 1.18; letter-spacing: -.035em; }
-    h2 { font-size: 1.12rem; letter-spacing: -.015em; }
-    p { line-height: 1.55; }
-    .eyebrow { color: var(--accent); font-size: .85rem; font-weight: 750; margin-bottom: .55rem; }
-    .intro { color: var(--muted); margin-top: .65rem; }
-    .panel { min-width: 0; background: white; border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem; }
-    .controls { margin-top: 1.25rem; display: grid; gap: .9rem; }
-    .controls header { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
-    .sliders, .plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    .controls label { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; color: var(--muted); font-size: .95rem; }
-    output { color: var(--ink); font-weight: 750; font-variant-numeric: tabular-nums; }
-    input[type="range"] { width: 100%; min-height: 1.65rem; margin: .25rem 0 0; accent-color: var(--accent); }
-    button { border: 1px solid #b8d1d1; border-radius: 8px; background: #f5fbfa; color: #075a54; padding: .45rem .65rem; font: inherit; font-size: .85rem; cursor: pointer; }
-    button:hover { background: #e5f5f2; }
-    button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #20897f; outline-offset: 3px; }
-    .hint { color: var(--muted); font-size: .83rem; }
-    .stage { margin-top: 1rem; padding: 1.15rem; border: 1px solid #253c51; border-radius: 14px; background: radial-gradient(ellipse at 64% 38%, #1c3449, #101d2f 66%); color: #f0f6ff; }
-    .stage header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; }
-    .stage .eyebrow { color: #92e5e1; font-size: .75rem; margin-bottom: .25rem; }
-    .stage button { color: #eef8ff; background: #20364b; border-color: #57718a; }
-    .stage button:hover { background: #2c4b64; }
-    .stage canvas { display: block; width: 100%; height: clamp(185px, 33vw, 344px); }
-    .light-readout { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .55rem .7rem; border-radius: 8px; background: #0c1829; color: #dae7f3; font-size: .84rem; }
-    .light-readout output { color: #f0f6ff; }
-    .light-readout i { display: inline-block; width: .5rem; height: .5rem; margin-right: .3rem; border-radius: 50%; background: #ff8993; }
-    .light-readout .reference i { background: #84e9fc; }
-    .light-readout #beam-status { margin-left: auto; color: #bacde0; }
-    .stage-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .45rem .85rem; padding: 0; margin: .8rem 0 .55rem; color: #e1ebf7; font-size: .8rem; }
-    .stage-legend b { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; margin-right: .27rem; border: 1px solid #5b7a94; border-radius: 50%; color: #d9f2ff; font-size: .66rem; }
-    .stage-note { color: #b9ccdf; font-size: .77rem; }
-    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: .95rem 0; }
-    .metric { padding: .85rem .95rem; }
-    .metric.accent { background: var(--teal-bg); border-color: #c6e8df; }
-    .metric span { display: block; color: var(--muted); font-size: .86rem; }
-    .metric strong { display: block; font-size: clamp(1.3rem, 3.5vw, 1.9rem); line-height: 1.28; font-variant-numeric: tabular-nums; margin: .15rem 0; }
-    .status { background: #edf4f8; border-left: 3px solid #86a9bf; color: #30465f; padding: .6rem .8rem; border-radius: 5px; font-size: .9rem; margin-bottom: .95rem; }
-    .status[data-warning="true"] { background: #fff4e7; border-color: var(--amber); color: #714014; }
-    .plots { margin-top: 1rem; }
-    figure .hint { margin-top: .35rem; }
-    .plot { display: block; width: 100%; height: auto; margin-top: .55rem; overflow: visible; }
-    .plot text { fill: var(--muted); font-family: inherit; font-size: 13px; }
-    .plot .axis { stroke: #788da0; stroke-width: 1; }
-    .plot .grid { stroke: var(--grid); stroke-width: 1; }
-    .plot .curve { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-    .legend { display: flex; flex-wrap: wrap; gap: .3rem .75rem; color: var(--muted); font-size: .78rem; }
-    .legend > span { display: inline-flex; align-items: center; gap: .3rem; }
-    .swatch { display: inline-block; width: .8rem; height: .17rem; background: var(--accent); }
-    .swatch.dashed { height: 0; background: transparent; border-top: 2px dashed var(--blue); }
-    .swatch.dot { width: .47rem; height: .47rem; border-radius: 50%; border: 1px solid var(--blue); background: white; }
-    details { margin-top: 1rem; }
-    summary { color: var(--accent); font-weight: 700; cursor: pointer; }
-    details p { margin: .5rem 0 0; font-size: .9rem; color: var(--muted); }
-    @media (max-width: 44rem) {
-      main { margin: 1.2rem auto 2rem; }
-      .plots { grid-template-columns: 1fr; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 520px at 88% -8%, rgba(255, 107, 125, .12), transparent 70%),
+        radial-gradient(800px 480px at 0% 8%, rgba(116, 230, 250, .09), transparent 70%),
+        var(--bg);
     }
-    @media (max-width: 29rem) {
-      main { width: calc(100% - 1.25rem); }
-      .sliders { grid-template-columns: 1fr; gap: .6rem; }
-      .panel { padding: .8rem; }
-      .stage { padding: .85rem; }
-      .light-readout #beam-status { margin-left: 0; }
-      .metrics { gap: .4rem; }
-      .metric { padding: .65rem .5rem; }
-      .metric span { font-size: .76rem; }
+    main { max-width: 1240px; margin: auto; padding: 32px 22px 56px; }
+    h1, h2, h3, p, figure { margin: 0; }
+    h1 { font-size: clamp(1.7rem, 4.2vw, 2.7rem); letter-spacing: -.045em; line-height: 1.15; }
+    h2 { font-size: 1.05rem; letter-spacing: -.02em; }
+    p { line-height: 1.55; }
+    .hero { display: flex; justify-content: space-between; align-items: end; gap: 18px; flex-wrap: wrap; margin-bottom: 20px; }
+    .hero > div { max-width: 760px; }
+    .eyebrow { color: var(--laser); font-size: .8rem; font-weight: 750; letter-spacing: .04em; margin-bottom: 8px; }
+    .intro { margin-top: 10px; color: var(--muted); }
+    .spec { display: flex; gap: 8px; flex-wrap: wrap; }
+    .spec span { border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 11px; color: #cfe0f0; font-size: .8rem; background: rgba(13, 26, 43, .7); }
+    button, select {
+      font: inherit; font-size: .85rem; color: var(--ink); background: var(--panel-2);
+      border: 1px solid var(--line-2); border-radius: 9px; min-height: 36px; padding: 5px 12px; cursor: pointer;
+    }
+    button:hover { background: #18304b; border-color: #3d6383; }
+    button[aria-pressed="true"] { background: #3a1d2a; border-color: var(--laser); color: #ffd6dc; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .panel { background: linear-gradient(180deg, rgba(17, 34, 56, .92), rgba(12, 24, 40, .92)); border: 1px solid var(--line); border-radius: 16px; padding: 18px; min-width: 0; }
+    .hint-text { color: var(--muted); font-size: .84rem; }
+
+    .stage { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid var(--line-2);
+      background: radial-gradient(ellipse 80% 70% at 50% 25%, #182d47, #0a1626 62%, #050c17);
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .05); }
+    .stage canvas { display: block; width: 100%; height: clamp(380px, 62vh, 660px); cursor: grab; }
+    .stage canvas:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--accent); }
+    .hud { position: absolute; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; flex-wrap: wrap; }
+    .hud > * { pointer-events: auto; }
+    .hud-top { top: 14px; }
+    .hud-bottom { bottom: 12px; align-items: flex-end; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { background: rgba(7, 15, 27, .78); border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 11px; font-size: .8rem; color: #d6e6f5; backdrop-filter: blur(6px); font-variant-numeric: tabular-nums; }
+    .chip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+    .chip .sample { background: var(--laser); box-shadow: 0 0 8px var(--laser); }
+    .chip .reference { background: var(--ref); box-shadow: 0 0 8px var(--ref); }
+    .chip.warn { border-color: var(--warn); color: #ffe2b8; }
+    .views { display: flex; gap: 4px; background: rgba(7, 15, 27, .72); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px; backdrop-filter: blur(6px); }
+    .views button { min-height: 30px; padding: 3px 9px; font-size: .78rem; background: transparent; border-color: transparent; }
+    .views button:hover { background: #1a314b; }
+    .hint { background: rgba(7, 15, 27, .72); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; color: #b7cadc; font-size: .78rem; backdrop-filter: blur(6px); max-width: 560px; }
+    .hint b { color: #e8f6ff; font-weight: 650; }
+    .info { position: absolute; right: 14px; top: 64px; width: min(300px, calc(100% - 28px)); background: rgba(7, 15, 27, .88); border: 1px solid var(--line-2); border-radius: 14px; padding: 14px; backdrop-filter: blur(8px); box-shadow: 0 18px 40px -20px #000; }
+    .info[hidden] { display: none; }
+    .info h3 { font-size: .98rem; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .info h3 button { min-height: 26px; padding: 0 8px; font-size: .78rem; }
+    .info p { color: #bcd0e2; font-size: .83rem; margin-top: 6px; }
+    .info dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 10px 0 0; font-size: .82rem; }
+    .info dt { color: var(--muted); }
+    .info dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .dock { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+    .heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .controls { display: grid; gap: 15px; margin-top: 12px; }
+    .control-title { display: flex; justify-content: space-between; gap: 8px; font-weight: 650; font-size: .9rem; }
+    output { color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; }
+    input[type="range"] { width: 100%; display: block; margin: 6px 0 2px; min-height: 28px; accent-color: var(--accent); }
+    .bounds { display: flex; justify-content: space-between; color: var(--muted); font-size: .74rem; }
+    .toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+    .vials { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+    .vials button { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; font-size: .78rem; min-height: 0; }
+    .vials button span { width: 18px; height: 30px; border-radius: 3px 3px 7px 7px; border: 1px solid rgba(200, 240, 255, .55); background: var(--fill); box-shadow: inset 0 -12px 12px -8px rgba(0, 0, 0, .35); }
+    .vials button[aria-pressed="true"] { background: #13344a; border-color: var(--accent); color: #d7fff8; }
+    .scope canvas { display: block; width: 100%; height: 190px; margin-top: 8px; }
+    .scope .hint-text { margin-top: 6px; }
+
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+    .metric span { display: block; color: var(--muted); font-size: .84rem; }
+    .metric strong { display: block; font-size: clamp(1.35rem, 3.5vw, 2rem); line-height: 1.25; font-variant-numeric: tabular-nums; margin: 4px 0 2px; letter-spacing: -.02em; }
+    .metric.accent { border-color: #2a6a66; background: linear-gradient(180deg, rgba(20, 70, 72, .55), rgba(12, 34, 44, .9)); }
+    .metric.accent strong { color: var(--accent); }
+    .status { background: rgba(17, 34, 56, .7); border: 1px solid var(--line); border-left: 3px solid #5b8fb4; color: #c7d8e8; padding: 10px 13px; border-radius: 10px; font-size: .88rem; }
+    .status[data-warning="true"] { border-left-color: var(--warn); background: rgba(70, 44, 14, .5); color: #ffe0b5; }
+    .plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+    .plot { display: block; width: 100%; height: auto; margin-top: 8px; overflow: visible; }
+    .plot text { fill: #8ea6bd; font-family: inherit; font-size: 13px; }
+    .plot .axis { stroke: #3a5672; stroke-width: 1; }
+    .plot .grid { stroke: rgba(140, 180, 215, .13); stroke-width: 1; }
+    .plot .curve { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: #b7cadc; font-size: .78rem; margin-top: 6px; }
+    .legend > span { display: inline-flex; align-items: center; gap: 5px; }
+    .swatch { display: inline-block; width: 14px; height: 3px; background: var(--accent); border-radius: 2px; }
+    .swatch.dashed { height: 0; background: transparent; border-top: 2px dashed #7fb2ff; }
+    .swatch.dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #7fb2ff; background: transparent; }
+    details { margin-top: 12px; }
+    summary { color: var(--accent); font-weight: 700; cursor: pointer; }
+    details p { margin: .5rem 0 0; font-size: .88rem; color: var(--muted); }
+    @media (max-width: 880px) {
+      .dock, .plots { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      main { padding: 20px 12px 40px; }
+      .panel { padding: 13px; }
+      .metrics { grid-template-columns: 1fr; }
+      .hint { display: none; }
+      .views button[data-view="top"], .views button[data-view="side"] { display: none; }
+      .info { top: auto; bottom: 10px; }
       .plot text { font-size: 15px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <header>
-      <p class="eyebrow">물리학과 AI 코딩 과제 · 06 광학</p>
-      <h1>액체 오염도 간이 측정기 시뮬레이터</h1>
-      <p class="intro">시료 농도와 광원 출력을 바꾸고, 참조광 보정이 투과율과 농도 추정에 주는 영향을 살펴봅니다.</p>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">물리학과 AI 코딩 · 실험 06 광학</p>
+        <h1>액체 오염도 간이 측정기 시뮬레이터</h1>
+        <p class="intro">레이저를 시료 경로와 참조 경로로 나눠 큐벳의 투과율을 재고, 참조광 보정으로 광원 출력 변화를 지웁니다. 장치를 돌려 보고 부품을 눌러 원리를 확인하세요. 시료병을 누르면 큐벳이 교체됩니다.</p>
+      </div>
+      <div class="spec" aria-label="모델 조건">
+        <span>λ = 650 nm</span><span>큐벳 1 cm</span><span>T = e<sup>−1.6c</sup></span><span>500 Hz ON/OFF</span><span>D = 0.60 m</span>
+      </div>
     </header>
 
     <noscript><p class="status" data-warning="true">이 파일을 실행하려면 브라우저에서 자바스크립트를 허용해야 합니다.</p></noscript>
 
-    <section class="panel controls" aria-labelledby="controls-heading">
-      <header>
-        <h2 id="controls-heading">실험 조건</h2>
-        <button id="reset" type="button">초기값으로</button>
-      </header>
-      <div class="sliders">
-        <div>
-          <label for="concentration">합성 시료의 상대 농도 <output id="concentration-value" for="concentration">65%</output></label>
-          <input type="range" id="concentration" min="0" max="100" step="1" value="65">
+    <section class="stage" aria-labelledby="stage-title">
+      <h2 id="stage-title" hidden>3D 광학 장치</h2>
+      <canvas id="optical-bench" tabindex="0" role="img" aria-label="레이저가 빔 스플리터에서 두 갈래로 나뉘는 3D 광학 장치. 시료 빛은 큐벳과 슬릿을 지나 스크린에 도달하고 참조 빛은 참조 센서로 갑니다. 드래그해 회전할 수 있습니다."></canvas>
+      <div class="hud hud-top">
+        <div class="chips">
+          <span class="chip"><i class="sample"></i>시료 도달 <b id="scene-sample-light">—</b></span>
+          <span class="chip"><i class="reference"></i>참조 도달 <b id="scene-reference-light">—</b></span>
+          <span class="chip" id="beam-status">재생 중</span>
         </div>
-        <div>
-          <label for="laser">미지 시료 측정 시 레이저 출력 <output id="laser-value" for="laser">80%</output></label>
-          <input type="range" id="laser" min="0" max="100" step="1" value="80">
+        <div class="views" role="group" aria-label="시점 바꾸기">
+          <button type="button" data-view="home">기본 시점</button>
+          <button type="button" data-view="front">정면</button>
+          <button type="button" data-view="beam">빛 따라가기</button>
+          <button type="button" data-view="top">위</button>
+          <button type="button" id="zoom-in" aria-label="확대">＋</button>
+          <button type="button" id="zoom-out" aria-label="축소">－</button>
         </div>
       </div>
-      <p class="hint">출력을 0%까지 내리면 참조 신호가 부족할 때 추정이 어떻게 중단되는지 확인할 수 있습니다.</p>
+      <aside class="info" id="info" hidden aria-live="polite">
+        <h3><span id="info-title"></span><button type="button" id="info-close" aria-label="설명 닫기">닫기</button></h3>
+        <p id="info-text"></p>
+        <dl id="info-values"></dl>
+      </aside>
+      <div class="hud hud-bottom">
+        <p class="hint"><b>드래그</b> 회전 · <b>클릭 후 휠/핀치</b> 확대 · <b>부품 클릭</b> 설명 · <b>레이저 클릭</b> 켜고 끄기 · <b>시료병 클릭</b> 큐벳 교체</p>
+      </div>
     </section>
 
-    <section class="stage" aria-labelledby="stage-title">
-      <header>
-        <div>
-          <p class="eyebrow">움직이는 3D 장면</p>
-          <h2 id="stage-title">레이저의 시료 경로와 참조 경로</h2>
+    <div class="dock">
+      <section class="panel" aria-labelledby="controls-heading">
+        <div class="heading">
+          <h2 id="controls-heading">실험 조건</h2>
+          <div class="toggles">
+            <button id="beam-toggle" type="button" aria-pressed="false">빛 움직임 일시정지</button>
+            <button id="chop-toggle" type="button" aria-pressed="false">ON/OFF 변조 보기</button>
+            <button id="reset" type="button">초기값으로</button>
+          </div>
         </div>
-        <button id="beam-toggle" type="button">빛 움직임 일시정지</button>
-      </header>
-      <canvas id="optical-bench" role="img" aria-label="레이저가 두 갈래로 나뉘는 3D 광학 장치. 시료 빛은 큐벳과 슬릿을 지나 스크린에 도달하고 참조 빛은 큐벳을 우회합니다."></canvas>
-      <div class="light-readout" aria-label="경로별 상대 광량">
-        <span><i aria-hidden="true"></i>시료 도달 <output id="scene-sample-light">—</output></span>
-        <span class="reference"><i aria-hidden="true"></i>참조 도달 <output id="scene-reference-light">—</output></span>
-        <span id="beam-status"></span>
-      </div>
-      <ol class="stage-legend" aria-label="장치 이름">
-        <li><b>1</b>레이저</li><li><b>2</b>빔 스플리터</li><li><b>3</b>시료 큐벳</li>
-        <li><b>4</b>단일 슬릿</li><li><b>5</b>회절 스크린</li><li><b>6</b>참조 센서</li>
-      </ol>
-      <p class="stage-note">빛의 이동은 경로를 쉽게 볼 수 있게 느리게 표시합니다. 색은 경로를 구분하고, 광량은 각 경로의 최대 광량을 기준으로 표시합니다.</p>
-    </section>
+        <div class="controls">
+          <div>
+            <div class="control-title"><label for="concentration">합성 시료의 상대 농도</label><output id="concentration-value" for="concentration">65%</output></div>
+            <input type="range" id="concentration" min="0" max="100" step="1" value="65">
+            <div class="vials" role="group" aria-label="시료병 고르기" id="vials"></div>
+          </div>
+          <div>
+            <div class="control-title"><label for="laser">미지 시료 측정 시 레이저 출력</label><output id="laser-value" for="laser">80%</output></div>
+            <input type="range" id="laser" min="0" max="100" step="1" value="80">
+            <div class="bounds" aria-hidden="true"><span>0% · 추정 중단 확인</span><span>100% · 검량 때 출력</span></div>
+          </div>
+          <div>
+            <div class="control-title"><label for="slit">단일 슬릿 폭 (회절 무늬에만 적용)</label><output id="slit-value" for="slit">80 µm</output></div>
+            <input type="range" id="slit" min="40" max="160" step="5" value="80">
+            <div class="bounds" aria-hidden="true"><span>40 µm · 넓은 무늬</span><span>160 µm · 좁은 무늬</span></div>
+          </div>
+        </div>
+      </section>
+      <section class="panel scope" aria-labelledby="scope-title">
+        <div class="heading"><h2 id="scope-title">센서 전압과 ON/OFF 차분</h2><span class="hint-text">500 Hz 변조를 느리게 표시</span></div>
+        <canvas id="scope" role="img" aria-label="시료와 참조 센서 전압이 레이저 ON/OFF에 따라 바뀌는 파형"></canvas>
+        <p class="hint-text" id="scope-note">—</p>
+      </section>
+    </div>
 
     <section class="metrics" aria-label="시뮬레이션 결과">
       <article class="panel metric accent">
@@ -164,7 +233,7 @@
       <figure class="panel">
         <figcaption>
           <h2>검량선과 미지 시료 추정</h2>
-          <p class="hint">기지 농도 25%, 50%, 100%의 투과율로 감쇠 모델을 적합합니다.</p>
+          <p class="hint-text">기지 농도 25%, 50%, 100%의 투과율로 감쇠 모델을 적합합니다.</p>
         </figcaption>
         <svg id="calibration-plot" class="plot" viewBox="0 0 510 258" role="img" aria-label="합성 시료 농도에 따른 투과율 검량선"></svg>
         <div class="legend" aria-hidden="true">
@@ -173,11 +242,10 @@
           <span>◆ 미지 시료 추정</span>
         </div>
       </figure>
-
       <figure class="panel">
         <figcaption>
           <h2>단일 슬릿 회절 무늬</h2>
-          <p class="hint" id="diffraction-note">기준 출력에서 농도가 만드는 상대 강도 변화입니다.</p>
+          <p class="hint-text" id="diffraction-note">기준 출력에서 농도가 만드는 상대 강도 변화입니다.</p>
         </figcaption>
         <svg id="diffraction-plot" class="plot" viewBox="0 0 510 258" role="img" aria-label="스크린 위치에 따른 단일 슬릿 회절 강도"></svg>
         <div class="legend" aria-hidden="true">
@@ -190,21 +258,693 @@
     <details class="panel">
       <summary>계산 모형과 결과의 범위</summary>
       <p>1 cm 큐벳에서 투과율은 T = exp(−1.6c)로 생성합니다. c는 합성 시료의 상대 농도로 0부터 1까지입니다. 500 Hz로 측정한 센서 전압의 ON/OFF 차분을 구한 다음 시료와 참조의 비를 블랭크로 정규화합니다. 적합한 감쇠 기울기 b를 이용해 −ln(T)/b로 농도를 역산합니다.</p>
-      <p>회절 무늬는 650 nm 빛과 폭 80 μm 슬릿의 프라운호퍼 모형에 가상의 산란 배경을 더해 표시합니다. 모든 수치는 합성 시료와 가상 광센서에서 계산합니다.</p>
+      <p>회절 무늬는 650 nm 빛과 단일 슬릿의 프라운호퍼 모형에 가상의 산란 배경을 더해 표시합니다. 기본 슬릿 폭은 Python판과 같은 80 µm이며, 슬릿 폭 조절은 회절 그래프와 스크린 무늬에만 적용되고 농도 추정에는 영향을 주지 않습니다. 장면의 빛 속도, 입자, 색은 이해를 돕는 표현이며 모든 수치는 합성 시료와 가상 광센서에서 계산합니다.</p>
     </details>
   </main>
 
   <script>
     "use strict";
+    /* ───────── 미니 3D 엔진: 궤도 카메라 · 원근 투영 · 깊이 정렬 · 조명 · 선택 ───────── */
+    const V3 = {
+      add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+      sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+      mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+      dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+      cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+      norm: a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+      lerp: (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t],
+    };
+    const Rot = {
+      x: a => { const c = Math.cos(a), s = Math.sin(a); return [[1, 0, 0], [0, c, -s], [0, s, c]]; },
+      y: a => { const c = Math.cos(a), s = Math.sin(a); return [[c, 0, s], [0, 1, 0], [-s, 0, c]]; },
+      z: a => { const c = Math.cos(a), s = Math.sin(a); return [[c, -s, 0], [s, c, 0], [0, 0, 1]]; },
+      mul: (A, B) => A.map(r => [0, 1, 2].map(j => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j])),
+      apply: (M, v) => [
+        M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2],
+        M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2],
+        M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2],
+      ],
+    };
+    const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+    const mix = (a, b, t) => a.map((value, i) => value + (b[i] - value) * t);
+    const rgbCss = (c, alpha = 1) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha})`;
 
+    class Scene3D {
+      constructor(canvas, options = {}) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        this.home = { yaw: 0.6, pitch: 0.45, dist: 8, target: [0, 0, 0], ...options.view };
+        this.cam = { ...this.home, target: [...this.home.target] };
+        this.minDist = options.minDist ?? 2;
+        this.maxDist = options.maxDist ?? 30;
+        this.minPitch = options.minPitch ?? 0.02;
+        this.maxPitch = options.maxPitch ?? 1.45;
+        this.fov = options.fov ?? 0.7;
+        this.light = V3.norm(options.light ?? [-0.45, 0.85, 0.55]);
+        this.ambient = options.ambient ?? 0.36;
+        this.fog = options.fog ?? null;
+        this.onPick = options.onPick;
+        this.onHover = options.onHover;
+        this.draggable = options.draggable ?? (() => false);
+        this.onDragStart = options.onDragStart;
+        this.onDrag = options.onDrag;
+        this.onDragEnd = options.onDragEnd;
+        this.onCamera = options.onCamera;
+        this.items = [];
+        this.glows = [];
+        this.overlay = [];
+        this.picks = [];
+        this.pointers = new Map();
+        this.tween = null;
+        this.spin = 0;
+        this.dirty = true;
+        this.engaged = false;
+        this.hoverId = null;
+        this.w = 0;
+        this.h = 0;
+        this.bind();
+        if (window.ResizeObserver) new ResizeObserver(() => { this.dirty = true; }).observe(canvas);
+      }
+
+      bind() {
+        const canvas = this.canvas;
+        canvas.style.touchAction = "none";
+        if (!canvas.hasAttribute("tabindex")) canvas.tabIndex = 0;
+        const local = event => {
+          const box = canvas.getBoundingClientRect();
+          return [event.clientX - box.left, event.clientY - box.top];
+        };
+        canvas.addEventListener("pointerdown", event => {
+          try { canvas.setPointerCapture(event.pointerId); } catch (error) { /* 무시 */ }
+          const point = local(event);
+          this.pointers.set(event.pointerId, point);
+          this.engaged = true;
+          this.tween = null;
+          this.spin = 0;
+          if (this.pointers.size === 1) {
+            const id = this.hit(point);
+            const drag = id != null && this.draggable(id);
+            this.gesture = { start: point, last: point, moved: 0, id, drag, time: performance.now() };
+            if (drag) {
+              canvas.style.cursor = "grabbing";
+              this.onDragStart?.(id, point, this);
+            }
+          } else {
+            if (this.gesture?.drag) this.onDragEnd?.(this.gesture.id, 99, this);
+            this.gesture = { pinch: this.pinchDistance(), dist: this.cam.dist };
+          }
+          this.dirty = true;
+        });
+        canvas.addEventListener("pointermove", event => {
+          const point = local(event);
+          if (!this.pointers.has(event.pointerId)) {
+            const id = this.hit(point);
+            if (id !== this.hoverId) {
+              this.hoverId = id;
+              this.onHover?.(id, this);
+              this.dirty = true;
+            }
+            canvas.style.cursor = id != null ? (this.draggable(id) ? "ns-resize" : "pointer") : "grab";
+            return;
+          }
+          this.pointers.set(event.pointerId, point);
+          const gesture = this.gesture;
+          if (!gesture) return;
+          if (gesture.pinch) {
+            const distance = this.pinchDistance();
+            if (distance > 0 && gesture.pinch > 0) {
+              this.cam.dist = clamp(gesture.dist * gesture.pinch / distance, this.minDist, this.maxDist);
+              this.changed();
+            }
+            return;
+          }
+          const dx = point[0] - gesture.last[0];
+          const dy = point[1] - gesture.last[1];
+          gesture.moved += Math.abs(dx) + Math.abs(dy);
+          gesture.last = point;
+          gesture.moveTime = performance.now();
+          if (gesture.drag) {
+            this.onDrag?.(gesture.id, point, this);
+            this.dirty = true;
+            return;
+          }
+          if (gesture.moved > 4) {
+            canvas.style.cursor = "grabbing";
+            this.cam.yaw -= dx * 0.0085;
+            this.cam.pitch = clamp(this.cam.pitch + dy * 0.0065, this.minPitch, this.maxPitch);
+            this.spin = -dx * 0.0085;
+            this.changed();
+          }
+        });
+        const end = event => {
+          if (!this.pointers.has(event.pointerId)) return;
+          this.pointers.delete(event.pointerId);
+          const gesture = this.gesture;
+          if (gesture && !gesture.pinch) {
+            if (gesture.drag) this.onDragEnd?.(gesture.id, gesture.moved, this);
+            else if (gesture.moved <= 5 && event.type === "pointerup") this.onPick?.(this.hit(gesture.last), gesture.last, this);
+            if (!gesture.moveTime || performance.now() - gesture.moveTime > 90 || gesture.drag) this.spin = 0;
+          } else {
+            this.spin = 0;
+          }
+          this.gesture = null;
+          canvas.style.cursor = "grab";
+          this.dirty = true;
+        };
+        canvas.addEventListener("pointerup", end);
+        canvas.addEventListener("pointercancel", end);
+        canvas.addEventListener("pointerleave", () => {
+          if (!this.pointers.size) {
+            this.engaged = false;
+            if (this.hoverId != null) {
+              this.hoverId = null;
+              this.onHover?.(null, this);
+              this.dirty = true;
+            }
+          }
+        });
+        canvas.addEventListener("wheel", event => {
+          if (!this.engaged && !event.ctrlKey) return;
+          event.preventDefault();
+          this.zoom(Math.exp(event.deltaY * (event.ctrlKey ? 0.01 : 0.0012)));
+        }, { passive: false });
+        canvas.addEventListener("keydown", event => {
+          const actions = {
+            ArrowLeft: () => { this.cam.yaw += 0.12; },
+            ArrowRight: () => { this.cam.yaw -= 0.12; },
+            ArrowUp: () => { this.cam.pitch = clamp(this.cam.pitch + 0.08, this.minPitch, this.maxPitch); },
+            ArrowDown: () => { this.cam.pitch = clamp(this.cam.pitch - 0.08, this.minPitch, this.maxPitch); },
+            "+": () => this.zoom(0.88), "=": () => this.zoom(0.88), "-": () => this.zoom(1.14),
+            "0": () => this.reset(), Home: () => this.reset(),
+          };
+          if (!actions[event.key]) return;
+          event.preventDefault();
+          this.tween = null;
+          actions[event.key]();
+          this.changed();
+        });
+      }
+
+      pinchDistance() {
+        const [a, b] = [...this.pointers.values()];
+        return a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : 0;
+      }
+
+      changed() {
+        this.dirty = true;
+        this.onCamera?.(this);
+      }
+
+      zoom(factor) {
+        this.tween = null;
+        this.cam.dist = clamp(this.cam.dist * factor, this.minDist, this.maxDist);
+        this.changed();
+      }
+
+      reset() {
+        this.setView(this.home);
+      }
+
+      setView(view, duration = 700) {
+        const from = { ...this.cam, target: [...this.cam.target] };
+        const to = { ...from, ...view, target: [...(view.target ?? from.target)] };
+        while (to.yaw - from.yaw > Math.PI) to.yaw -= 2 * Math.PI;
+        while (to.yaw - from.yaw < -Math.PI) to.yaw += 2 * Math.PI;
+        this.spin = 0;
+        this.tween = { from, to, start: performance.now(), duration };
+        this.dirty = true;
+      }
+
+      update(dt) {
+        let moving = false;
+        if (this.tween) {
+          const { from, to, start, duration } = this.tween;
+          const raw = clamp((performance.now() - start) / duration, 0, 1);
+          const t = raw < 0.5 ? 4 * raw ** 3 : 1 - (-2 * raw + 2) ** 3 / 2;
+          this.cam.yaw = from.yaw + (to.yaw - from.yaw) * t;
+          this.cam.pitch = from.pitch + (to.pitch - from.pitch) * t;
+          this.cam.dist = from.dist + (to.dist - from.dist) * t;
+          this.cam.target = V3.lerp(from.target, to.target, t);
+          if (raw >= 1) this.tween = null;
+          moving = true;
+        } else if (Math.abs(this.spin) > 2e-4 && !this.gesture) {
+          this.cam.yaw += this.spin;
+          this.spin *= Math.pow(0.9, dt * 60);
+          moving = true;
+        }
+        if (moving) this.changed();
+        return moving || this.dirty;
+      }
+
+      begin() {
+        const canvas = this.canvas;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (!width || !height || !this.ctx) return false;
+        const density = Math.min(window.devicePixelRatio || 1, 2);
+        const pixelWidth = Math.round(width * density);
+        const pixelHeight = Math.round(height * density);
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+          canvas.width = pixelWidth;
+          canvas.height = pixelHeight;
+        }
+        this.w = width;
+        this.h = height;
+        this.ctx.setTransform(density, 0, 0, density, 0, 0);
+        this.ctx.clearRect(0, 0, width, height);
+        const { yaw, pitch, dist, target } = this.cam;
+        const cosPitch = Math.cos(pitch);
+        this.eye = [
+          target[0] + dist * cosPitch * Math.sin(yaw),
+          target[1] + dist * Math.sin(pitch),
+          target[2] + dist * cosPitch * Math.cos(yaw),
+        ];
+        this.f = V3.norm(V3.sub(target, this.eye));
+        this.r = V3.norm(V3.cross(this.f, [0, 1, 0]));
+        this.u = V3.cross(this.r, this.f);
+        this.focal = Math.min(height, width * 0.78) / (2 * Math.tan(this.fov / 2));
+        this.cx = width / 2;
+        this.cy = height / 2;
+        this.items = [];
+        this.glows = [];
+        this.overlay = [];
+        this.dirty = false;
+        return true;
+      }
+
+      project(point) {
+        const v = [point[0] - this.eye[0], point[1] - this.eye[1], point[2] - this.eye[2]];
+        const z = v[0] * this.f[0] + v[1] * this.f[1] + v[2] * this.f[2];
+        if (z < 0.12) return null;
+        const s = this.focal / z;
+        return [
+          this.cx + (v[0] * this.r[0] + v[1] * this.r[1] + v[2] * this.r[2]) * s,
+          this.cy - (v[0] * this.u[0] + v[1] * this.u[1] + v[2] * this.u[2]) * s,
+          z,
+        ];
+      }
+
+      ray(screen) {
+        const dx = (screen[0] - this.cx) / this.focal;
+        const dy = -(screen[1] - this.cy) / this.focal;
+        return { origin: this.eye, dir: V3.norm(V3.add(this.f, V3.add(V3.mul(this.r, dx), V3.mul(this.u, dy)))) };
+      }
+
+      rayPlaneY(screen, height) {
+        const { origin, dir } = this.ray(screen);
+        if (Math.abs(dir[1]) < 1e-6) return null;
+        const t = (height - origin[1]) / dir[1];
+        return t > 0 ? V3.add(origin, V3.mul(dir, t)) : null;
+      }
+
+      shade(color, normal, point, options) {
+        if (options.emissive) return color;
+        const lambert = Math.max(0, V3.dot(normal, this.light));
+        const view = V3.norm(V3.sub(this.eye, point));
+        const half = V3.norm(V3.add(this.light, view));
+        const specular = Math.pow(Math.max(0, V3.dot(normal, half)), options.shine ?? 28) * (options.gloss ?? 0.16);
+        const rim = Math.pow(1 - Math.max(0, V3.dot(normal, view)), 3) * (options.rim ?? 0.1);
+        const k = this.ambient + (1 - this.ambient) * lambert;
+        const extra = 255 * (specular + rim);
+        return [color[0] * k + extra, color[1] * k + extra, color[2] * k + extra].map(v => Math.min(255, v));
+      }
+
+      fogged(color, z) {
+        if (!this.fog) return color;
+        const t = clamp((z - this.fog.near) / (this.fog.far - this.fog.near), 0, 1) * (this.fog.max ?? 0.7);
+        return mix(color, this.fog.color, t);
+      }
+
+      face(points, color, options = {}) {
+        let normal = options.normal;
+        if (!normal) {
+          normal = [0, 0, 0];
+          for (let i = 0; i < points.length; i += 1) {
+            const a = points[i];
+            const b = points[(i + 1) % points.length];
+            normal[0] += (a[1] - b[1]) * (a[2] + b[2]);
+            normal[1] += (a[2] - b[2]) * (a[0] + b[0]);
+            normal[2] += (a[0] - b[0]) * (a[1] + b[1]);
+          }
+          normal = V3.norm(normal);
+        }
+        if (V3.dot(normal, V3.sub(this.eye, points[0])) <= 0) {
+          if (!options.twoSided) return;
+          normal = V3.mul(normal, -1);
+        }
+        const screen = [];
+        let depth = 0;
+        const center = [0, 0, 0];
+        for (const point of points) {
+          const projected = this.project(point);
+          if (!projected) return;
+          screen.push(projected);
+          depth += projected[2];
+          center[0] += point[0];
+          center[1] += point[1];
+          center[2] += point[2];
+        }
+        depth /= points.length;
+        const shaded = this.fogged(this.shade(color, normal, V3.mul(center, 1 / points.length), options), depth);
+        this.items.push({
+          kind: 0, pts: screen, z: options.z ?? depth + (options.bias ?? 0), rgb: shaded,
+          alpha: options.alpha ?? 1, id: options.id, stroke: options.stroke, strokeWidth: options.strokeWidth,
+        });
+      }
+
+      quad(points, color, options = {}) {
+        this.face(points, color, options);
+      }
+
+      box(center, half, color, options = {}) {
+        const rotation = options.rot;
+        const corner = (x, y, z) => {
+          let v = [x * half[0], y * half[1], z * half[2]];
+          if (rotation) v = Rot.apply(rotation, v);
+          return V3.add(center, v);
+        };
+        const v = [
+          corner(-1, -1, -1), corner(1, -1, -1), corner(1, 1, -1), corner(-1, 1, -1),
+          corner(-1, -1, 1), corner(1, -1, 1), corner(1, 1, 1), corner(-1, 1, 1),
+        ];
+        const faces = [
+          [[0, 3, 2, 1], [0, 0, -1], "back"], [[4, 5, 6, 7], [0, 0, 1], "front"],
+          [[0, 4, 7, 3], [-1, 0, 0], "left"], [[1, 2, 6, 5], [1, 0, 0], "right"],
+          [[0, 1, 5, 4], [0, -1, 0], "bottom"], [[3, 7, 6, 2], [0, 1, 0], "top"],
+        ];
+        for (const [indices, normal, name] of faces) {
+          const faceColor = options.faces?.[name] ?? color;
+          if (faceColor === null) continue;
+          this.face(indices.map(i => v[i]), faceColor, {
+            ...options, normal: rotation ? Rot.apply(rotation, normal) : normal,
+          });
+        }
+      }
+
+      cylinder(a, b, radius, color, options = {}) {
+        const segments = options.segments ?? 20;
+        const radiusB = options.radiusB ?? radius;
+        const axis = V3.norm(V3.sub(b, a));
+        const e1 = V3.norm(V3.cross(axis, Math.abs(axis[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
+        const e2 = V3.cross(axis, e1);
+        const ringA = [];
+        const ringB = [];
+        const normals = [];
+        for (let i = 0; i < segments; i += 1) {
+          const angle = 2 * Math.PI * i / segments;
+          const dir = V3.add(V3.mul(e1, Math.cos(angle)), V3.mul(e2, Math.sin(angle)));
+          normals.push(dir);
+          ringA.push(V3.add(a, V3.mul(dir, radius)));
+          ringB.push(V3.add(b, V3.mul(dir, radiusB)));
+        }
+        for (let i = 0; i < segments; i += 1) {
+          const j = (i + 1) % segments;
+          const normal = V3.norm(V3.add(normals[i], normals[j]));
+          this.face([ringA[i], ringA[j], ringB[j], ringB[i]], options.sideColor ?? color, { ...options, normal });
+        }
+        if (options.caps !== false) {
+          this.face([...ringB].reverse(), options.capColor ?? color, { ...options, normal: axis });
+          this.face(ringA, options.capColor ?? color, { ...options, normal: V3.mul(axis, -1) });
+        }
+      }
+
+      sphere(center, radius, color, options = {}) {
+        const lat = options.lat ?? 8;
+        const lon = options.lon ?? 14;
+        const scale = options.scale ?? [1, 1, 1];
+        const point = (i, j) => {
+          const theta = Math.PI * i / lat;
+          const phi = 2 * Math.PI * j / lon;
+          return [
+            center[0] + radius * scale[0] * Math.sin(theta) * Math.cos(phi),
+            center[1] + radius * scale[1] * Math.cos(theta),
+            center[2] + radius * scale[2] * Math.sin(theta) * Math.sin(phi),
+          ];
+        };
+        for (let i = 0; i < lat; i += 1) {
+          for (let j = 0; j < lon; j += 1) {
+            const quad = [point(i, j), point(i + 1, j), point(i + 1, j + 1), point(i, j + 1)];
+            const middle = V3.mul(quad.reduce((sum, p) => V3.add(sum, p), [0, 0, 0]), 0.25);
+            this.face(quad, color, { ...options, normal: V3.norm(V3.sub(middle, center)), twoSided: true });
+          }
+        }
+      }
+
+      capsule(start, end, rx, ry, color, options = {}) {
+        const direction = V3.sub(end, start);
+        const axis = V3.norm(direction);
+        const across = V3.norm(V3.cross(axis, Math.abs(axis[2]) < 0.8 ? [0, 0, 1] : [1, 0, 0]));
+        const side = V3.cross(axis, across);
+        const middle = V3.add(start, V3.mul(direction, 0.5));
+        const lat = options.lat ?? 7;
+        const lon = options.lon ?? 12;
+        const rings = Array.from({ length: lat + 1 }, (_, i) => Array.from({ length: lon }, (_, j) => {
+          const theta = Math.PI * i / lat;
+          const phi = 2 * Math.PI * j / lon;
+          return V3.add(middle, V3.add(V3.mul(direction, Math.cos(theta) / 2),
+            V3.mul(V3.add(V3.mul(across, rx * Math.cos(phi)), V3.mul(side, ry * Math.sin(phi))), Math.sin(theta))));
+        }));
+        for (let i = 0; i < lat; i += 1) {
+          for (let j = 0; j < lon; j += 1) {
+            const k = (j + 1) % lon;
+            const quad = [rings[i][j], rings[i][k], rings[i + 1][k], rings[i + 1][j]];
+            const center = V3.mul(quad.reduce((sum, p) => V3.add(sum, p), [0, 0, 0]), 0.25);
+            this.face(quad, color, { ...options, normal: V3.norm(V3.sub(center, middle)) });
+          }
+        }
+      }
+
+      line(points, css, width = 1, options = {}) {
+        const screen = [];
+        let depth = 0;
+        for (const point of points) {
+          const projected = this.project(point);
+          if (!projected) return;
+          screen.push(projected);
+          depth += projected[2];
+        }
+        depth /= points.length;
+        const lineWidth = options.world ? Math.max(0.6, options.world * this.focal / depth) : width;
+        const item = { kind: 1, pts: screen, z: options.z ?? depth + (options.bias ?? 0), css, width: lineWidth, dash: options.dash, id: options.id };
+        if (options.glow) this.glows.push(item);
+        else this.items.push(item);
+      }
+
+      coil(a, b, radius, turns, color, wire = 0.035, options = {}) {
+        const axis = V3.sub(b, a);
+        const steps = Math.max(24, Math.round(turns * 16));
+        let previous = null;
+        for (let i = 0; i <= steps; i += 1) {
+          const t = i / steps;
+          const angle = 2 * Math.PI * turns * t;
+          const radial = [Math.cos(angle), 0, Math.sin(angle)];
+          const point = V3.add(V3.add(a, V3.mul(axis, t)), V3.mul(radial, radius));
+          if (previous) {
+            const normal = V3.norm(V3.add(radial, previous.radial));
+            const light = this.ambient + (1 - this.ambient) * Math.max(0, V3.dot(normal, this.light));
+            const facing = V3.dot(normal, V3.norm(V3.sub(this.eye, point)));
+            const k = light * (facing > 0 ? 1 : 0.62) + (facing > 0.75 ? 0.16 : 0);
+            this.line([previous.point, point], rgbCss(color.map(v => Math.min(255, v * k))), 1,
+              { world: wire, id: options.id, bias: -facing * radius * 0.6 });
+          }
+          previous = { point, radial };
+        }
+      }
+
+      shadow(center, rx, rz, alpha = 0.35, options = {}) {
+        const points = [];
+        for (let i = 0; i < 28; i += 1) {
+          const angle = 2 * Math.PI * i / 28;
+          const projected = this.project([center[0] + rx * Math.cos(angle), center[1], center[2] + rz * Math.sin(angle)]);
+          if (!projected) return;
+          points.push(projected);
+        }
+        this.items.push({ kind: 2, pts: points, z: options.z ?? 1e8, alpha, soft: options.soft ?? 10 });
+      }
+
+      glow(point, radius, color, alpha = 1) {
+        const projected = this.project(point);
+        if (!projected) return;
+        this.glows.push({ kind: 3, x: projected[0], y: projected[1], r: Math.max(1, radius * this.focal / projected[2]), color, alpha });
+      }
+
+      beam(a, b, color, intensity, width = 0.05) {
+        if (intensity <= 0.002) return;
+        const start = this.project(a);
+        const end = this.project(b);
+        if (!start || !end) return;
+        const depth = (start[2] + end[2]) / 2;
+        const px = width * this.focal / depth;
+        this.glows.push({ kind: 4, a: start, b: end, color, intensity, px });
+      }
+
+      label(point, text, options = {}) {
+        const projected = this.project(point);
+        if (!projected) return;
+        this.overlay.push({ x: projected[0], y: projected[1], text, ...options });
+      }
+
+      flush() {
+        const ctx = this.ctx;
+        this.items.sort((a, b) => b.z - a.z);
+        this.picks = [];
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        for (const item of this.items) {
+          ctx.beginPath();
+          item.pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+          if (item.kind === 0) {
+            ctx.closePath();
+            ctx.globalAlpha = item.alpha;
+            ctx.fillStyle = rgbCss(item.rgb);
+            ctx.fill();
+            if (item.stroke) {
+              ctx.strokeStyle = item.stroke;
+              ctx.lineWidth = item.strokeWidth ?? 1;
+              ctx.stroke();
+            } else if (item.alpha >= 1) {
+              ctx.strokeStyle = ctx.fillStyle;
+              ctx.lineWidth = 0.7;
+              ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            if (item.id != null) this.picks.push(item);
+          } else if (item.kind === 1) {
+            ctx.strokeStyle = item.css;
+            ctx.lineWidth = item.width;
+            ctx.setLineDash(item.dash ?? []);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            if (item.id != null && item.width > 3) this.picks.push({ ...item, line: true });
+          } else if (item.kind === 2) {
+            ctx.closePath();
+            ctx.save();
+            ctx.filter = `blur(${item.soft}px)`;
+            ctx.fillStyle = `rgba(0,0,0,${item.alpha})`;
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+        ctx.globalCompositeOperation = "lighter";
+        for (const glow of this.glows) {
+          if (glow.kind === 3) {
+            const gradient = ctx.createRadialGradient(glow.x, glow.y, 0, glow.x, glow.y, glow.r);
+            gradient.addColorStop(0, rgbCss(glow.color, glow.alpha));
+            gradient.addColorStop(0.35, rgbCss(glow.color, glow.alpha * 0.35));
+            gradient.addColorStop(1, rgbCss(glow.color, 0));
+            ctx.fillStyle = gradient;
+            ctx.fillRect(glow.x - glow.r, glow.y - glow.r, glow.r * 2, glow.r * 2);
+          } else if (glow.kind === 4) {
+            const { a, b, color, intensity, px } = glow;
+            for (const [scale, alpha] of [[5, 0.08], [2.4, 0.2], [1, 0.75], [0.35, 1]]) {
+              ctx.beginPath();
+              ctx.moveTo(a[0], a[1]);
+              ctx.lineTo(b[0], b[1]);
+              ctx.strokeStyle = scale < 0.5 ? `rgba(255,255,255,${0.85 * intensity})` : rgbCss(color, alpha * intensity);
+              ctx.lineWidth = Math.max(0.8, px * scale);
+              ctx.stroke();
+            }
+          } else {
+            ctx.beginPath();
+            glow.pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+            ctx.strokeStyle = glow.css;
+            ctx.lineWidth = glow.width;
+            ctx.stroke();
+          }
+        }
+        ctx.globalCompositeOperation = "source-over";
+        for (const label of this.overlay) this.drawLabel(label);
+      }
+
+      drawLabel({ x, y, text, color = "#dff7ff", border = "rgba(140,190,220,.55)", lift = 26, sub, align = "center", strong }) {
+        const ctx = this.ctx;
+        ctx.font = `${strong ? 750 : 650} 12px system-ui, -apple-system, "Malgun Gothic", sans-serif`;
+        const subWidth = sub ? (ctx.font = "500 11px system-ui, -apple-system, sans-serif", ctx.measureText(sub).width) : 0;
+        ctx.font = `${strong ? 750 : 650} 12px system-ui, -apple-system, "Malgun Gothic", sans-serif`;
+        const width = Math.max(ctx.measureText(text).width, subWidth) + 16;
+        const height = sub ? 34 : 22;
+        const left = align === "left" ? x + 8 : x - width / 2;
+        const top = y - lift - height;
+        if (lift > 0) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, top + height);
+          ctx.strokeStyle = border;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y, 2.4, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(left, top, width, height, 7) : ctx.rect(left, top, width, height);
+        ctx.fillStyle = "rgba(7,15,27,.84)";
+        ctx.fill();
+        ctx.strokeStyle = border;
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, left + 8, top + (sub ? 11 : height / 2 + 0.5));
+        if (sub) {
+          ctx.font = "500 11px system-ui, -apple-system, sans-serif";
+          ctx.fillStyle = "#a9bfd3";
+          ctx.fillText(sub, left + 8, top + 24);
+        }
+      }
+
+      hit(point) {
+        const [x, y] = point;
+        for (let i = this.picks.length - 1; i >= 0; i -= 1) {
+          const item = this.picks[i];
+          if (item.line) {
+            for (let k = 0; k < item.pts.length - 1; k += 1) {
+              const [ax, ay] = item.pts[k];
+              const [bx, by] = item.pts[k + 1];
+              const length = Math.hypot(bx - ax, by - ay) || 1;
+              const t = clamp(((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / length ** 2, 0, 1);
+              if (Math.hypot(x - ax - t * (bx - ax), y - ay - t * (by - ay)) < item.width / 2 + 2) return item.id;
+            }
+            continue;
+          }
+          let inside = false;
+          const pts = item.pts;
+          for (let a = 0, b = pts.length - 1; a < pts.length; b = a, a += 1) {
+            if ((pts[a][1] > y) !== (pts[b][1] > y)
+              && x < (pts[b][0] - pts[a][0]) * (y - pts[a][1]) / (pts[b][1] - pts[a][1]) + pts[a][0]) inside = !inside;
+          }
+          if (inside) return item.id;
+        }
+        return null;
+      }
+
+      floorGrid(size, step, y = 0, color = [26, 44, 66], line = "rgba(120,170,210,.10)") {
+        // 카메라 뒤로 넘어가는 꼭짓점이 없도록 바닥을 작은 타일로 나눈다.
+        const tiles = Math.round(2 * size / step);
+        for (let i = 0; i < tiles; i += 1) {
+          for (let j = 0; j < tiles; j += 1) {
+            const x0 = -size + i * step;
+            const z0 = -size + j * step;
+            const pts = [[x0, y, z0], [x0 + step, y, z0], [x0 + step, y, z0 + step], [x0, y, z0 + step]].map(p => this.project(p));
+            if (pts.some(p => !p)) continue;
+            const fade = clamp(1 - Math.hypot(x0 + step / 2, z0 + step / 2) / size, 0, 1);
+            this.items.push({ kind: 0, z: 1e9, alpha: 1, rgb: this.fogged(color.map(v => v * (0.55 + 0.45 * fade)), pts[0][2]), pts });
+            this.items.push({ kind: 1, z: 9e8, css: line, width: 1, pts: [pts[3], pts[0], pts[1]] });
+          }
+        }
+      }
+    }
+
+    /* ───────── 광학 모델 (Python simulate.py와 같은 식) ───────── */
     const wavelength = 650e-9;
-    const slitWidth = 80e-6;
     const screenDistance = 0.6;
     const minReference = 0.01;
     const standards = [0.25, 0.5, 1];
     const svgNamespace = "http://www.w3.org/2000/svg";
-    const colors = { teal: "#0f766e", blue: "#285d93", ink: "#16263d" };
-    const byId = (id) => document.getElementById(id);
+    const colors = { teal: "#5fe3d0", blue: "#7fb2ff", ink: "#eaf2fb" };
+    const byId = id => document.getElementById(id);
+    let slitWidth = 80e-6;
 
     function trueTransmission(concentration) {
       return Math.exp(-1.6 * concentration);
@@ -266,7 +1006,7 @@
       const reading = measure(concentration, laserScale, seededRandom(73));
       const truth = trueTransmission(concentration);
       const raw = reading.sampleOn / blank.sampleOn;
-      const result = { truth, raw, referenceDelta: reading.referenceDelta };
+      const result = { truth, raw, referenceDelta: reading.referenceDelta, sampleDelta: reading.sampleDelta };
       if (reading.referenceDelta <= minReference) {
         return { ...result, warning: "참조광이 너무 약해 보정과 농도 추정을 중단했습니다." };
       }
@@ -286,214 +1026,410 @@
       return trueTransmission(concentration) * sinc ** 2 + scatter;
     }
 
+    function firstZero() {
+      return screenDistance * Math.tan(Math.asin(Math.min(1, wavelength / slitWidth)));
+    }
+
     function fringeVisibility(concentration) {
-      const firstZero = screenDistance * Math.tan(Math.asin(wavelength / slitWidth));
       const center = diffraction(0, concentration);
-      const fringe = diffraction(firstZero, concentration);
+      const fringe = diffraction(firstZero(), concentration);
       return (center - fringe) / (center + fringe);
     }
 
-    const benchCanvas = byId("optical-bench");
-    const bench = benchCanvas.getContext("2d");
-    const beamToggle = byId("beam-toggle");
+    /* ───────── 상태 ───────── */
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
     let beamPlaying = !reducedMotion.matches;
-    let beamFrame = null;
-    let previousBeamTime = null;
+    let chopView = false;
     let beamTime = 0;
-    let sceneConcentration = 0;
-    let sceneLaser = 0;
+    let concentration = 0.65;
+    let laser = 0.8;
+    let lastLaser = 0.8;
+    let sceneConcentration = 0.65;
+    let swap = null;
+    let selected = null;
+    let hoverId = null;
+    let lastResult = null;
 
-    function drawBench() {
-      if (!bench) return;
-      const { width, height } = benchCanvas.getBoundingClientRect();
-      if (!width || !height) return;
-      const ratio = Math.min(devicePixelRatio || 1, 2);
-      const pixelsWide = Math.round(width * ratio);
-      const pixelsHigh = Math.round(height * ratio);
-      if (benchCanvas.width !== pixelsWide || benchCanvas.height !== pixelsHigh) {
-        benchCanvas.width = pixelsWide;
-        benchCanvas.height = pixelsHigh;
+    const VIALS = [
+      { label: "블랭크", value: 0 }, { label: "25%", value: 0.25 }, { label: "50%", value: 0.5 },
+      { label: "미지 65%", value: 0.65 }, { label: "100%", value: 1 },
+    ];
+    const liquidColor = c => mix([196, 236, 238], [122, 92, 42], Math.pow(c, 0.8));
+
+    /* ───────── 3D 장면 좌표 ───────── */
+    const OX = -4.4;
+    const BEAM_Y = 1.35;
+    const P = {
+      laser: OX + 0.65, splitter: OX + 2.69, cuvette: OX + 4.73, slit: OX + 6.2, screen: OX + 8.7,
+      refZ: 2.6, vialZ: 1.75,
+    };
+
+    const scene = new Scene3D(byId("optical-bench"), {
+      view: { yaw: -0.58, pitch: 0.44, dist: 11.4, target: [0.2, 1.0, 0.5] },
+      minDist: 2.6, maxDist: 22, fov: 0.64,
+      fog: { color: [8, 18, 32], near: 9, far: 24, max: 0.5 },
+      onPick: id => {
+        if (id === "laser") toggleLaser();
+        else if (typeof id === "string" && id.startsWith("vial-")) chooseVial(Number(id.slice(5)));
+        if (id && id !== "laser" && !String(id).startsWith("vial-")) select(id);
+        else if (!id) select(null);
+      },
+      onHover: id => { hoverId = id; },
+    });
+
+    function toggleLaser() {
+      const input = byId("laser");
+      if (laser > 0) {
+        lastLaser = laser;
+        input.value = 0;
+      } else {
+        input.value = Math.round((lastLaser || 0.8) * 100);
       }
-      bench.setTransform(ratio, 0, 0, ratio, 0, 0);
-      bench.clearRect(0, 0, width, height);
+      update();
+    }
 
-      const scale = Math.min(width / 11, height / 4.8);
-      // A fixed orthographic camera looks down onto the optical bench.
-      const project = ([x, y, z]) => [width / 2 + (0.893 * x - 0.45 * z - 3.72) * scale,
-        height / 2 + (-0.167 * x - 0.332 * z - 0.928 * y + 1.91) * scale];
-      const polygon = (points, fill, stroke) => {
-        bench.beginPath();
-        bench.moveTo(...project(points[0]));
-        points.slice(1).forEach((point) => bench.lineTo(...project(point)));
-        bench.closePath();
-        bench.fillStyle = fill;
-        bench.fill();
-        if (stroke) {
-          bench.lineWidth = 1;
-          bench.strokeStyle = stroke;
-          bench.stroke();
+    function chooseVial(index) {
+      const target = VIALS[index].value;
+      byId("concentration").value = Math.round(target * 100);
+      update();
+    }
+
+    const INFO = {
+      laser: {
+        title: "① 650 nm 레이저",
+        text: "타이밍 제어기가 500 Hz로 켜고 끕니다. 꺼진 순간의 전압을 빼면 고정 주변광이 지워집니다. 장면에서 레이저를 누르면 켜고 끌 수 있습니다.",
+        focus: { target: [P.laser, 1.3, 0], dist: 4.4, yaw: -0.9, pitch: 0.32 },
+      },
+      splitter: {
+        title: "② 빔 스플리터",
+        text: "빛을 시료 경로와 참조 경로로 나눕니다. 두 경로가 같은 광원을 쓰므로 출력이 떨어지면 함께 줄고, 비를 취하면 그 변화가 상쇄됩니다.",
+        focus: { target: [P.splitter, 1.3, 1.2], dist: 5.4, yaw: -0.45, pitch: 0.5 },
+      },
+      cuvette: {
+        title: "③ 1 cm 시료 큐벳",
+        text: "비어–람베르트 법칙 T = exp(−μLc)를 따라 농도가 높을수록 빛이 지수적으로 약해집니다. 입자에 부딪혀 옆으로 흩어지는 빛도 보입니다.",
+        focus: { target: [P.cuvette, 1.35, 0], dist: 4.4, yaw: -0.6, pitch: 0.3 },
+      },
+      slit: {
+        title: "④ 단일 슬릿",
+        text: "좁은 틈을 지난 빛은 퍼지며 밝고 어두운 무늬를 만듭니다. 슬릿이 좁을수록 무늬가 넓어집니다.",
+        focus: { target: [P.slit, 1.35, 0], dist: 4.2, yaw: -1.05, pitch: 0.25 },
+      },
+      screen: {
+        title: "⑤ 회절 스크린과 시료 센서",
+        text: "중앙 밝은 무늬의 세기와 첫 어두운 무늬의 대비로 프린지 가시도를 계산합니다. 산란이 많을수록 어두운 무늬가 흐려집니다.",
+        focus: { target: [P.screen, 1.35, 0], dist: 4.6, yaw: -1.2, pitch: 0.2 },
+      },
+      reference: {
+        title: "⑥ 참조 센서",
+        text: "큐벳을 거치지 않은 빛을 받아 광원 출력 변화만 기록합니다. 차분 전압이 0.01 V 이하이면 보정을 중단합니다.",
+        focus: { target: [P.splitter, 1.3, P.refZ], dist: 4.2, yaw: -0.3, pitch: 0.35 },
+      },
+    };
+
+    function infoValues(id) {
+      const r = lastResult;
+      const T = trueTransmission(concentration);
+      const rows = {
+        laser: [["출력", `${(laser * 100).toFixed(0)}%`], ["상태", laser > 0 ? "켜짐" : "꺼짐"], ["변조", "500 Hz ON/OFF"]],
+        splitter: [["시료 경로 광량", `${(laser * 100).toFixed(1)}%`], ["참조 경로 광량", `${(laser * 100).toFixed(1)}%`]],
+        cuvette: [["상대 농도", `${(concentration * 100).toFixed(0)}%`], ["모델 투과율 T", T.toFixed(4)], ["흡광도 −ln T", (-Math.log(T)).toFixed(3)]],
+        slit: [["슬릿 폭 a", `${(slitWidth * 1e6).toFixed(0)} µm`], ["첫 어두운 무늬", `±${(firstZero() * 1000).toFixed(2)} mm`], ["중앙 무늬 폭", `${(2 * firstZero() * 1000).toFixed(2)} mm`]],
+        screen: [["중앙 상대 강도", (laser * diffraction(0, concentration)).toFixed(4)], ["프린지 가시도", fringeVisibility(concentration).toFixed(4)], ["시료 ΔV", r ? `${r.sampleDelta.toFixed(4)} V` : "—"]],
+        reference: [["참조 ΔV", r ? `${r.referenceDelta.toFixed(4)} V` : "—"], ["판정", r && r.referenceDelta > minReference ? "보정 가능" : "신호 부족"]],
+      };
+      return rows[id] ?? [];
+    }
+
+    function renderInfo() {
+      const panel = byId("info");
+      if (!selected) {
+        panel.hidden = true;
+        return;
+      }
+      const info = INFO[selected];
+      panel.hidden = false;
+      byId("info-title").textContent = info.title;
+      byId("info-text").textContent = info.text;
+      const list = byId("info-values");
+      list.replaceChildren();
+      for (const [label, value] of infoValues(selected)) {
+        const dt = document.createElement("dt");
+        const dd = document.createElement("dd");
+        dt.textContent = label;
+        dd.textContent = value;
+        list.append(dt, dd);
+      }
+    }
+
+    function select(id) {
+      selected = INFO[id] ? id : null;
+      renderInfo();
+      if (selected) scene.setView(INFO[selected].focus);
+    }
+    byId("info-close").addEventListener("click", () => {
+      select(null);
+      scene.setView(scene.home);
+    });
+
+    /* ───────── 장면 그리기 ───────── */
+    function mount(x, z, height, id) {
+      scene.cylinder([x, 0.12, z], [x, 0.16, z], 0.32, [70, 86, 106], { id, segments: 18, gloss: 0.3 });
+      scene.cylinder([x, 0.16, z], [x, height, z], 0.075, [150, 166, 186], { id, segments: 12, gloss: 0.55, shine: 40 });
+    }
+
+    function laserVisible() {
+      if (laser <= 0) return 0;
+      if (!chopView) return laser;
+      return Math.floor(beamTime * 1.6) % 2 === 0 ? laser : 0;
+    }
+
+    function cuvetteState(now) {
+      if (!swap) return { lift: 0, c: concentration };
+      const t = clamp((now - swap.start) / 1500, 0, 1);
+      if (t >= 1) {
+        swap = null;
+        return { lift: 0, c: concentration };
+      }
+      const ease = s => s * s * (3 - 2 * s);
+      const lift = t < 0.35 ? ease(t / 0.35) : t > 0.65 ? ease((1 - t) / 0.35) : 1;
+      const mixT = clamp((t - 0.35) / 0.3, 0, 1);
+      return { lift: lift * 1.25, c: swap.from + (swap.to - swap.from) * mixT };
+    }
+
+    function drawBench(now) {
+      if (!scene.begin()) return;
+      scene.floorGrid(16, 1, -0.6, [14, 26, 44]);
+      const on = laserVisible();
+      const hl = id => (selected === id || hoverId === id) ? { stroke: "rgba(255,255,255,.7)", strokeWidth: 1.2 } : {};
+
+      // 광학 브레드보드
+      scene.shadow([0, -0.598, 0.4], 6.4, 3.4, 0.5, { soft: 20 });
+      scene.box([0, 0.06, 0.4], [5.3, 0.06, 2.75], [40, 52, 68], { z: 5e7, gloss: 0.35, faces: { top: [48, 62, 80] } });
+      scene.box([0, -0.27, 0.4], [5.1, 0.27, 2.55], [26, 34, 46], { z: 6e7 });
+      for (let x = -5; x <= 5.01; x += 0.5) {
+        for (let z = -2.2; z <= 3.01; z += 0.5) {
+          const p = scene.project([x, 0.121, z]);
+          if (p) scene.items.push({ kind: 0, z: 4.9e7, rgb: [22, 30, 42], alpha: 1, pts: [[p[0] - 1.3, p[1] - 0.8], [p[0] + 1.3, p[1] - 0.8], [p[0] + 1.3, p[1] + 0.8], [p[0] - 1.3, p[1] + 0.8]] });
         }
-      };
-      const line = (start, end, color, thickness = 1) => {
-        bench.beginPath();
-        bench.moveTo(...project(start));
-        bench.lineTo(...project(end));
-        bench.strokeStyle = color;
-        bench.lineWidth = thickness;
-        bench.lineCap = "round";
-        bench.stroke();
-      };
-      const box = (x0, x1, y0, y1, z0, z1, [top, front, left], edge) => {
-        polygon([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]], top, edge);
-        polygon([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0]], front, edge);
-        polygon([[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]], left, edge);
-      };
-      const dot = (point, radius, color) => {
-        bench.beginPath();
-        bench.arc(...project(point), radius, 0, 2 * Math.PI);
-        bench.fillStyle = color;
-        bench.fill();
-      };
-      const mount = (x, z, height) => {
-        box(x-.29, x+.29, 0, .12, z-.3, z+.3, ["#57708a", "#2d435a", "#23374e"]);
-        box(x-.073, x+.073, .12, height, z-.073, z+.073, ["#7491ab", "#465f7a", "#293f56"]);
-      };
-      const label = (number, point) => {
-        const [x, y] = project(point);
-        dot(point, 8.5, "#0c1829");
-        bench.strokeStyle = "#7796b2";
-        bench.lineWidth = 1;
-        bench.stroke();
-        bench.font = "700 10px system-ui, sans-serif";
-        bench.textAlign = "center";
-        bench.textBaseline = "middle";
-        bench.fillStyle = "#edf7ff";
-        bench.fillText(number, x, y + .5);
-      };
+      }
 
-      box(-.25, 9.5, -.18, 0, -1.08, 3.08, ["#283e54", "#15283d", "#172c40"], "#46627c");
-      for (let x = 0; x <= 9.5; x += .5) line([x,0,-1.08], [x,0,3.08], "#38546c");
-      for (let z = -.95; z < 3.08; z += .4) line([-.25,0,z], [9.5,0,z], "#38546c");
+      // ① 레이저
+      mount(P.laser, 0, 1.05, "laser");
+      scene.cylinder([P.laser - 0.6, BEAM_Y, 0], [P.laser + 0.55, BEAM_Y, 0], 0.27, [64, 82, 104], { id: "laser", gloss: 0.5, shine: 40, segments: 24, capColor: [40, 52, 66], ...hl("laser") });
+      scene.cylinder([P.laser + 0.55, BEAM_Y, 0], [P.laser + 0.68, BEAM_Y, 0], 0.17, [170, 180, 196], { id: "laser", segments: 18, gloss: 0.6 });
+      for (let i = 0; i < 5; i += 1) {
+        const x = P.laser - 0.45 + i * 0.16;
+        scene.cylinder([x, BEAM_Y, 0], [x + 0.06, BEAM_Y, 0], 0.285, [40, 52, 66], { id: "laser", segments: 24, caps: false });
+      }
+      scene.glow([P.laser + 0.7, BEAM_Y, 0], on ? 0.35 : 0.12, on ? [255, 70, 90] : [90, 100, 110], on ? 1 : 0.5);
+      scene.glow([P.laser - 0.2, BEAM_Y + 0.3, 0.12], 0.07, laser > 0 ? [120, 255, 150] : [255, 80, 60], 0.9);
 
-      const screenX = 8.65;
-      const beamY = 1.33;
-      mount(8.74, 0, .43);
-      box(screenX, 8.8, .43, 2.23, -.96, .96, ["#506e88", "#29445d", "#122234"], "#6c869d");
-      mount(2.69, 2.59, 1.08);
-      box(2.43, 2.95, 1.08, 1.61, 2.39, 2.86, ["#6c859b", "#304d62", "#233c50"], "#7995a7");
-      mount(6.18, 0, .7);
-      box(6.12, 6.24, .69, 1.96, -.55, .55, ["#71869a", "#2d455d", "#192c41"], "#56728c");
-      line([6.12,1.09,0], [6.12,1.65,0], "#0b1625", Math.max(1.2, scale * .027));
-      mount(4.73, 0, .65);
-      box(4.28, 5.17, .61, .72, -.48, .48, ["#61758b", "#263d55", "#203349"]);
-      mount(2.69, 0, 1.03);
-      mount(.69, 0, 1.05);
-      box(.05, 1.27, 1.05, 1.62, -.35, .35, ["#7190a8", "#364e68", "#253e54"], "#83a0b6");
-      for (let x = .26; x < .92; x += .12) line([x,1.18,-.35], [x,1.46,-.35], "#22374c", 2);
-      dot([1.08,1.36,-.352], 2.2, sceneLaser > 0 ? "#ff929a" : "#8998a6");
+      // ② 빔 스플리터
+      mount(P.splitter, 0, BEAM_Y - 0.28, "splitter");
+      scene.box([P.splitter, BEAM_Y - 0.27, 0], [0.32, 0.02, 0.32], [90, 106, 126], { id: "splitter" });
+      scene.box([P.splitter, BEAM_Y, 0], [0.26, 0.26, 0.26], [150, 220, 245], { id: "splitter", alpha: 0.32, gloss: 0.6, shine: 60, stroke: selected === "splitter" || hoverId === "splitter" ? "rgba(255,255,255,.8)" : "rgba(170,230,250,.7)", strokeWidth: 1 });
+      scene.face([[P.splitter - 0.26, BEAM_Y - 0.26, -0.26], [P.splitter + 0.26, BEAM_Y - 0.26, 0.26], [P.splitter + 0.26, BEAM_Y + 0.26, 0.26], [P.splitter - 0.26, BEAM_Y + 0.26, -0.26]], [190, 240, 255], { alpha: 0.28, twoSided: true, id: "splitter", gloss: 0.8 });
 
-      const sampleStrength = sceneLaser * trueTransmission(sceneConcentration);
-      if (sceneLaser > 0) {
-        const beam = (start, end, strength, color, offset = 0) => {
-          const alpha = Math.sqrt(strength);
-          line(start, end, `rgba(${color},${alpha * .20})`, 7);
-          line(start, end, `rgba(${color},${alpha * .8})`, 1.6);
-          const length = Math.hypot(end[0] - start[0], end[2] - start[2]);
-          const step = .93;
-          const movement = ((beamTime * 2.3 - offset) % step + step) % step;
-          const along = (distance) => start.map((value, index) => value + (end[index] - value) * distance / length);
-          for (let d = movement; d < length; d += step) {
-            line(along(Math.max(0, d - .18)), along(d), `rgba(${color},${alpha})`, 4.2);
-            dot(along(d), 1.6, `rgba(255,249,249,${alpha * .96})`);
+      // ⑥ 참조 센서
+      mount(P.splitter, P.refZ, BEAM_Y - 0.25, "reference");
+      scene.box([P.splitter, BEAM_Y, P.refZ + 0.12], [0.3, 0.28, 0.12], [60, 78, 98], { id: "reference", gloss: 0.3, ...hl("reference") });
+      scene.cylinder([P.splitter, BEAM_Y, P.refZ], [P.splitter, BEAM_Y, P.refZ - 0.05], 0.11, [30, 34, 44], { id: "reference", segments: 16, capColor: [70, 90, 140] });
+
+      // ③ 큐벳과 시료병
+      const cuv = cuvetteState(now);
+      sceneConcentration = cuv.c;
+      mount(P.cuvette, 0, 0.62, "cuvette");
+      scene.box([P.cuvette, 0.64, 0], [0.5, 0.03, 0.5], [90, 106, 126], { id: "cuvette" });
+      const lift = cuv.lift;
+      const liquid = liquidColor(cuv.c);
+      const base = 0.7 + lift;
+      scene.box([P.cuvette, base + 0.47, 0], [0.4, 0.45, 0.4], liquid, { alpha: 0.32 + 0.45 * cuv.c, gloss: 0.25, id: "cuvette", faces: { top: mix(liquid, [255, 255, 255], 0.15) } });
+      scene.box([P.cuvette, base + 0.7, 0], [0.45, 0.72, 0.45], [190, 240, 250], { alpha: 0.16, gloss: 0.9, shine: 70, id: "cuvette", stroke: selected === "cuvette" || hoverId === "cuvette" ? "rgba(255,255,255,.85)" : "rgba(180,235,245,.55)", strokeWidth: 1, faces: { top: null } });
+      if (lift > 0.02) scene.label([P.cuvette, base + 1.6, 0], "시료 교체 중", { lift: 0, color: "#ffe2b8" });
+
+      VIALS.forEach((vial, i) => {
+        const x = OX + 4.1 + i * 0.85;
+        const active = Math.abs(vial.value - concentration) < 1e-9;
+        const color = liquidColor(vial.value);
+        const z = P.vialZ;
+        const raise = active ? 0.06 : 0;
+        scene.shadow([x, 0.122, z], 0.24, 0.24, 0.35, { z: 4.8e7, soft: 4 });
+        scene.cylinder([x, 0.13 + raise, z], [x, 0.52 + raise, z], 0.17, color, { id: `vial-${i}`, alpha: 0.85, segments: 16, gloss: 0.3, capColor: mix(color, [255, 255, 255], 0.15) });
+        scene.cylinder([x, 0.52 + raise, z], [x, 0.78 + raise, z], 0.19, [210, 240, 250], { id: `vial-${i}`, alpha: 0.2, segments: 16, gloss: 0.9, caps: false });
+        scene.cylinder([x, 0.78 + raise, z], [x, 0.86 + raise, z], 0.13, active ? [95, 227, 208] : [90, 104, 124], { id: `vial-${i}`, segments: 14 });
+        scene.label([x, 0.95 + raise, z], vial.label, { lift: 0, color: active ? "#9ff6e8" : "#cfe0f0", border: active ? "rgba(95,227,208,.8)" : undefined });
+      });
+
+      // ④ 단일 슬릿
+      mount(P.slit, 0, 0.65, "slit");
+      const gap = 0.02 + (slitWidth * 1e6 - 40) / 120 * 0.07;
+      const slitColor = [92, 108, 128];
+      const slitOpts = { id: "slit", gloss: 0.35, ...hl("slit") };
+      scene.box([P.slit, 1.32, -0.29 - gap / 2], [0.05, 0.62, 0.28], slitColor, slitOpts);
+      scene.box([P.slit, 1.32, 0.29 + gap / 2], [0.05, 0.62, 0.28], slitColor, slitOpts);
+      scene.box([P.slit, 1.32 + 0.66, 0], [0.05, 0.04, 0.58 + gap / 2], slitColor, slitOpts);
+      scene.box([P.slit, 1.32 - 0.66, 0], [0.05, 0.04, 0.58 + gap / 2], slitColor, slitOpts);
+
+      // ⑤ 스크린
+      mount(P.screen, 0, 0.45, "screen");
+      scene.box([P.screen + 0.05, 1.35, 0], [0.04, 0.92, 1.05], [52, 70, 92], { id: "screen", gloss: 0.2, faces: { left: [24, 32, 44] }, ...hl("screen") });
+      const strips = 72;
+      const pulse = 0.9 + 0.1 * Math.sin(beamTime * 6);
+      for (let i = 0; i < strips; i += 1) {
+        const z0 = -0.96 + i * 1.92 / strips;
+        const z1 = z0 + 1.92 / strips;
+        const position = ((z0 + z1) / 2) / 0.96 * 0.012;
+        const brightness = on * diffraction(position, cuv.c) * (lift > 0.02 ? 0 : 1) + (lift > 0.02 ? on * diffraction(position, 0) : 0);
+        const k = clamp(Math.sqrt(brightness) * pulse, 0, 1);
+        scene.face([[P.screen, 0.55, z0], [P.screen, 0.55, z1], [P.screen, 2.15, z1], [P.screen, 2.15, z0]],
+          mix([20, 26, 36], [255, 96, 120], k).map((v, idx) => idx === 1 ? v + 90 * k * k : v), { emissive: true, id: "screen", bias: -0.01 });
+      }
+
+      // 빛 경로
+      if (on > 0) {
+        const sampleColor = [255, 92, 112];
+        const refColor = [100, 226, 255];
+        const transmitted = lift > 0.02 ? 1 : trueTransmission(cuv.c);
+        const intensity = s => Math.sqrt(clamp(s, 0, 1));
+        scene.beam([P.laser + 0.7, BEAM_Y, 0], [P.splitter, BEAM_Y, 0], sampleColor, intensity(on));
+        scene.beam([P.splitter, BEAM_Y, 0], [P.splitter, BEAM_Y, P.refZ], refColor, intensity(on), 0.045);
+        const enter = P.cuvette - 0.4;
+        const exit = P.cuvette + 0.4;
+        scene.beam([P.splitter, BEAM_Y, 0], [enter, BEAM_Y, 0], sampleColor, intensity(on));
+        const pieces = 8;
+        for (let i = 0; i < pieces; i += 1) {
+          const a = enter + (exit - enter) * i / pieces;
+          const b = enter + (exit - enter) * (i + 1) / pieces;
+          const local = lift > 0.02 ? 1 : trueTransmission(cuv.c * (i + 0.5) / pieces);
+          scene.beam([a, BEAM_Y, 0], [b, BEAM_Y, 0], sampleColor, intensity(on * local));
+        }
+        scene.beam([exit, BEAM_Y, 0], [P.slit, BEAM_Y, 0], sampleColor, intensity(on * transmitted));
+        if (lift <= 0.02 && cuv.c > 0.01) scene.glow([P.cuvette, BEAM_Y, 0], 0.55 + 0.4 * cuv.c, [255, 170, 150], 0.55 * cuv.c * Math.sqrt(on));
+        // 슬릿 뒤로 퍼지는 빛
+        const spread = clamp(firstZero() / 0.012 * 0.96, 0.08, 1.05);
+        const fan = scene.project([P.slit + 0.06, BEAM_Y, 0]);
+        if (fan) {
+          for (const [w, a] of [[spread * 2.2, 0.06], [spread, 0.16]]) {
+            scene.face([[P.slit + 0.06, BEAM_Y, 0], [P.screen - 0.01, BEAM_Y - 0.08, -Math.min(1, w)], [P.screen - 0.01, BEAM_Y + 0.08, Math.min(1, w)]],
+              sampleColor, { emissive: true, alpha: a * intensity(on * transmitted), twoSided: true, bias: -0.3 });
+            scene.face([[P.slit + 0.06, BEAM_Y, 0], [P.screen - 0.01, BEAM_Y + 0.08, -Math.min(1, w)], [P.screen - 0.01, BEAM_Y - 0.08, Math.min(1, w)]],
+              sampleColor, { emissive: true, alpha: a * 0.6 * intensity(on * transmitted), twoSided: true, bias: -0.3 });
           }
-        };
-        const sampleColor = "255,126,139";
-        beam([1.27,beamY,0], [2.43,beamY,0], sceneLaser, sampleColor);
-        beam([2.43,beamY,0], [4.29,beamY,0], sceneLaser, sampleColor, 1.16);
-        beam([2.69,beamY,0], [2.69,beamY,2.39], sceneLaser, "116,230,250", 1.42);
-        beam([4.29,beamY,0], [5.16,beamY,0], sceneLaser * trueTransmission(sceneConcentration / 2), sampleColor, 3.02);
-        beam([5.16,beamY,0], [6.19,beamY,0], sampleStrength, sampleColor, 3.89);
-
-        const pulse = .87 + .13 * Math.sin(beamTime * 8);
-        polygon([[6.22,beamY,0],[screenX,beamY,-.9],[screenX,beamY,.9]], `rgba(255,102,126,${Math.sqrt(sampleStrength) * .15})`);
-        for (let i = -4; i <= 4; i++) {
-          const brightness = sceneLaser * diffraction(i * .003, sceneConcentration);
-          line([6.22,beamY,0], [screenX,beamY,i*.225], `rgba(255,150,166,${Math.sqrt(brightness) * pulse * .41})`);
         }
-        for (let i = 0; i < 64; i++) {
-          const z0 = -.86 + i * 1.72 / 64;
-          const z1 = z0 + 1.72 / 64;
-          const brightness = sceneLaser * diffraction((z0 + z1) / 2 / .86 * .012, sceneConcentration);
-          polygon([[screenX,.64,z0],[screenX,.64,z1],[screenX,2.02,z1],[screenX,2.02,z0]],
-            `rgba(255,126,145,${Math.sqrt(brightness) * pulse})`);
-        }
-        dot([2.69,beamY,2.389], 4.6, `rgba(129,235,253,${Math.sqrt(sceneLaser) * pulse})`);
-      }
+        scene.glow([P.screen - 0.02, BEAM_Y, 0], 0.5, sampleColor, intensity(on * transmitted) * pulse * 0.8);
+        scene.glow([P.splitter, BEAM_Y, P.refZ - 0.05], 0.38, refColor, intensity(on) * pulse);
+        scene.glow([P.splitter, BEAM_Y, 0], 0.32, [255, 200, 210], intensity(on) * 0.5);
 
-      box(2.43, 2.95, 1.04, 1.62, -.26, .26,
-        ["#a8e9ff75", "#70bedd38", "#9cdaed56"], "#a7def1");
-      line([2.45,1.05,-.263], [2.94,1.60,-.263], "#a4d8e5", 1.4);
-      const liquidAlpha = .16 + sceneConcentration * .43;
-      box(4.32, 5.14, .72, 1.62, -.41, .41,
-        [`rgba(125,217,217,${liquidAlpha})`, `rgba(49,153,156,${liquidAlpha})`, `rgba(86,184,187,${liquidAlpha})`]);
-      box(4.29, 5.17, .70, 2.10, -.46, .46, ["#b5f6fd34", "#8adbe01e", "#98dfe527"], "#a6dce5");
-      if (sceneLaser > 0) {
-        const particles = Math.round(sceneConcentration * 19);
-        for (let i = 0; i < particles; i++) {
-          const x = 4.37 + (i * 47 % 71) / 101;
-          const y = .85 + (i * 29 % 63) / 100 + .025 * Math.sin(beamTime * 3 + i);
-          const z = -.36 + (i * 19 % 72) / 100;
-          dot([x,y,z], 1.15, `rgba(255,207,175,${Math.sqrt(sceneLaser) * .77})`);
+        // 움직이는 광자
+        if (!reducedMotion.matches) {
+          const route = [[P.laser + 0.7, P.splitter], [P.splitter, P.slit]];
+          const speed = 2.2;
+          for (const [from, to] of route) {
+            for (let d = (beamTime * speed) % 0.9; from + d < to; d += 0.9) {
+              const x = from + d;
+              const inside = x > enter && x < exit;
+              const local = x <= enter ? on : x >= exit ? on * transmitted : on * (lift > 0.02 ? 1 : trueTransmission(cuv.c * (x - enter) / (exit - enter)));
+              scene.glow([x, BEAM_Y, 0], inside ? 0.12 : 0.15, [255, 220, 225], intensity(local));
+            }
+          }
+          for (let d = (beamTime * speed) % 0.9; d < P.refZ; d += 0.9) scene.glow([P.splitter, BEAM_Y, d], 0.15, [210, 250, 255], intensity(on));
         }
       }
 
-      label(1, [.61,1.93,0]);
-      label(2, [2.69,1.96,0]);
-      label(3, [4.73,2.44,0]);
-      label(4, [6.19,2.26,0]);
-      label(5, [8.72,2.53,0]);
-      label(6, [2.69,1.93,2.63]);
-    }
-
-    function animateBeam(now) {
-      beamFrame = null;
-      if (previousBeamTime !== null) beamTime += Math.min(.05, (now - previousBeamTime) / 1000);
-      previousBeamTime = now;
-      drawBench();
-      beamFrame = requestAnimationFrame(animateBeam);
-    }
-
-    function refreshBeam() {
-      const moving = beamPlaying && sceneLaser > 0 && Boolean(bench);
-      if (moving && beamFrame === null) beamFrame = requestAnimationFrame(animateBeam);
-      if (!moving) {
-        if (beamFrame !== null) cancelAnimationFrame(beamFrame);
-        beamFrame = null;
-        previousBeamTime = null;
+      // 큐벳 안의 입자 (농도에 비례)
+      const particles = Math.round(cuv.c * 46);
+      for (let i = 0; i < particles; i += 1) {
+        const seed = i * 12.9898;
+        const x = P.cuvette - 0.33 + 0.66 * ((Math.sin(seed) * 43758.5) % 1 + 1) % 1;
+        const y = base + 0.1 + 0.78 * ((Math.sin(seed * 1.7) * 23421.6) % 1 + 1) % 1 + 0.03 * Math.sin(beamTime * 1.3 + i);
+        const z = -0.33 + 0.66 * ((Math.sin(seed * 2.3) * 9871.3) % 1 + 1) % 1 + 0.03 * Math.cos(beamTime * 1.1 + i * 0.7);
+        const nearBeam = Math.exp(-(((y - BEAM_Y) ** 2 + z ** 2) / 0.03));
+        scene.glow([x, y, z], 0.05 + 0.05 * nearBeam, nearBeam > 0.2 && on > 0 ? [255, 200, 170] : [190, 160, 110], 0.25 + 0.75 * nearBeam * Math.sqrt(on));
       }
-      beamToggle.textContent = beamPlaying ? "빛 움직임 일시정지" : "빛 움직임 재생";
-      byId("beam-status").textContent = !sceneLaser ? "레이저 꺼짐" : beamPlaying ? "재생 중" : "일시정지";
-      byId("scene-sample-light").value = (sceneLaser * trueTransmission(sceneConcentration) * 100).toFixed(1) + "%";
-      byId("scene-reference-light").value = (sceneLaser * 100).toFixed(1) + "%";
-      drawBench();
+
+      // 번호 표시
+      const tags = [["①", [P.laser, 2.0, 0]], ["②", [P.splitter, 1.95, 0]], ["③", [P.cuvette, 2.45 + lift, 0]], ["④", [P.slit, 2.25, 0]], ["⑤", [P.screen, 2.55, 0]], ["⑥", [P.splitter, 1.95, P.refZ]]];
+      const names = { "①": "레이저", "②": "빔 스플리터", "③": "큐벳", "④": "단일 슬릿", "⑤": "스크린", "⑥": "참조 센서" };
+      for (const [tag, point] of tags) scene.label(point, `${tag} ${names[tag]}`, { lift: 0 });
+
+      scene.flush();
     }
 
-    beamToggle.addEventListener("click", () => {
-      beamPlaying = !beamPlaying;
-      refreshBeam();
-    });
-    reducedMotion.addEventListener("change", (event) => {
-      if (event.matches) beamPlaying = false;
-      refreshBeam();
-    });
-    new ResizeObserver(drawBench).observe(benchCanvas);
+    /* ───────── 센서 파형 ───────── */
+    const scopeCanvas = byId("scope");
+    const scopeContext = scopeCanvas.getContext("2d");
+    function drawScope() {
+      if (!scopeContext) return;
+      const width = scopeCanvas.clientWidth;
+      const height = scopeCanvas.clientHeight;
+      if (!width || !height) return;
+      const density = Math.min(devicePixelRatio || 1, 2);
+      if (scopeCanvas.width !== Math.round(width * density)) scopeCanvas.width = Math.round(width * density);
+      if (scopeCanvas.height !== Math.round(height * density)) scopeCanvas.height = Math.round(height * density);
+      const ctx = scopeContext;
+      ctx.setTransform(density, 0, 0, density, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      const left = 40;
+      const right = width - 8;
+      const top = 8;
+      const bottom = height - 20;
+      ctx.fillStyle = "#08121f";
+      ctx.fillRect(left, top, right - left, bottom - top);
+      const vMax = 1.6;
+      const y = v => bottom - v / vMax * (bottom - top);
+      ctx.strokeStyle = "rgba(120,170,210,.12)";
+      ctx.lineWidth = 1;
+      ctx.font = "11px system-ui, sans-serif";
+      ctx.fillStyle = "#8ea6bd";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let v = 0; v <= vMax + 1e-9; v += 0.4) {
+        ctx.beginPath(); ctx.moveTo(left, y(v)); ctx.lineTo(right, y(v)); ctx.stroke();
+        ctx.fillText(v.toFixed(1), left - 5, y(v));
+      }
+      ctx.textAlign = "center";
+      ctx.fillText("시간 (ms, 10주기)", (left + right) / 2, height - 6);
+      const windowMs = 20;
+      const offset = (beamTime * 1.6) % 2;
+      const sampleSignal = 1.2 * laser * trueTransmission(concentration);
+      const referenceSignal = 0.9 * laser;
+      const traces = [
+        { color: "#ff6b7d", base: 0.19, flick: 0.035, signal: sampleSignal },
+        { color: "#74e6fa", base: 0.24, flick: 0.045, signal: referenceSignal },
+      ];
+      for (let ms = 0; ms <= windowMs; ms += 1) {
+        if (ms % 2 === 1) {
+          const x0 = left + (ms - (offset % 1)) / windowMs * (right - left);
+          ctx.fillStyle = "rgba(255,255,255,.035)";
+          ctx.fillRect(Math.max(left, x0), top, (right - left) / windowMs, bottom - top);
+        }
+      }
+      for (const trace of traces) {
+        ctx.beginPath();
+        for (let i = 0; i <= 400; i += 1) {
+          const tMs = i / 400 * windowMs + offset;
+          const onPhase = Math.floor(tMs) % 2 === 0;
+          const v = trace.base + trace.flick * Math.sin(2 * Math.PI * 0.12 * tMs) + (onPhase ? trace.signal : 0);
+          const x = left + i / 400 * (right - left);
+          if (i) ctx.lineTo(x, y(v)); else ctx.moveTo(x, y(v));
+        }
+        ctx.strokeStyle = trace.color;
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = trace.color;
+        ctx.shadowBlur = 5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
 
+    /* ───────── 그래프 ───────── */
     function svgElement(svg, tag, attributes, label) {
       const element = document.createElementNS(svgNamespace, tag);
       for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
       if (label !== undefined) element.textContent = label;
       svg.append(element);
+      return element;
     }
 
     function drawAxes(svg, xTicks, xLabel, yLabel) {
@@ -509,9 +1445,7 @@
       }
       svgElement(svg, "line", { x1: left, x2: right, y1: bottom, y2: bottom, class: "axis" });
       svgElement(svg, "line", { x1: left, x2: left, y1: top, y2: bottom, class: "axis" });
-      for (const tick of xTicks) {
-        svgElement(svg, "text", { x: x(tick), y: bottom + 19, "text-anchor": "middle" }, tick);
-      }
+      for (const tick of xTicks) svgElement(svg, "text", { x: x(tick), y: bottom + 19, "text-anchor": "middle" }, tick);
       svgElement(svg, "text", { x: (left + right) / 2, y: bottom + 44, "text-anchor": "middle" }, xLabel);
       const middle = (top + bottom) / 2;
       svgElement(svg, "text", { x: 14, y: middle, "text-anchor": "middle", transform: "rotate(-90 14 " + middle + ")" }, yLabel);
@@ -534,58 +1468,151 @@
       const axes = drawAxes(svg, [0, 25, 50, 75, 100], "상대 농도 (%)", "투과율");
       drawCurve(svg, axes, 0, 100, (c) => Math.exp(-attenuation * c / 100), colors.teal);
       for (const [c, value] of [[0, 1], ...calibration]) {
-        svgElement(svg, "circle", { cx: axes.x(100 * c), cy: axes.y(value), r: 4, fill: "white", stroke: colors.blue, "stroke-width": 2 });
+        svgElement(svg, "circle", { cx: axes.x(100 * c), cy: axes.y(value), r: 4.5, fill: "#0d1a2b", stroke: colors.blue, "stroke-width": 2 });
       }
       if (result.estimate >= 0 && result.estimate <= 1) {
         const cx = axes.x(result.estimate * 100), cy = axes.y(result.corrected);
-        svgElement(svg, "rect", { x: cx - 4.5, y: cy - 4.5, width: 9, height: 9, fill: colors.ink, transform: "rotate(45 " + cx + " " + cy + ")" });
+        svgElement(svg, "line", { x1: cx, x2: cx, y1: cy, y2: axes.y(0), stroke: "rgba(234,242,251,.35)", "stroke-dasharray": "3 3" });
+        svgElement(svg, "line", { x1: axes.x(0), x2: cx, y1: cy, y2: cy, stroke: "rgba(234,242,251,.35)", "stroke-dasharray": "3 3" });
+        svgElement(svg, "rect", { x: cx - 5, y: cy - 5, width: 10, height: 10, fill: colors.ink, transform: "rotate(45 " + cx + " " + cy + ")" });
       }
     }
 
-    function drawDiffraction(concentration) {
+    function drawDiffraction(c) {
       const svg = byId("diffraction-plot");
       const axes = drawAxes(svg, [-12, -8, -4, 0, 4, 8, 12], "스크린 위치 (mm)", "상대 강도");
       drawCurve(svg, axes, -12, 12, (mm) => diffraction(mm / 1000, 0), colors.blue, true);
-      drawCurve(svg, axes, -12, 12, (mm) => diffraction(mm / 1000, concentration), colors.teal);
-      byId("diffraction-note").textContent = "기준 출력에서의 상대 강도 · 프린지 가시도 " + fringeVisibility(concentration).toFixed(3);
+      drawCurve(svg, axes, -12, 12, (mm) => diffraction(mm / 1000, c), colors.teal);
+      const zero = firstZero() * 1000;
+      if (zero < 12) {
+        for (const sign of [-1, 1]) {
+          svgElement(svg, "line", { x1: axes.x(sign * zero), x2: axes.x(sign * zero), y1: axes.y(0), y2: axes.y(1.02), stroke: "rgba(255,107,125,.5)", "stroke-dasharray": "2 4" });
+        }
+      }
+      byId("diffraction-note").textContent = `슬릿 ${(slitWidth * 1e6).toFixed(0)} µm · 첫 어두운 무늬 ±${zero.toFixed(2)} mm · 프린지 가시도 ${fringeVisibility(c).toFixed(3)}`;
     }
 
+    /* ───────── 갱신 ───────── */
+    const vialButtons = VIALS.map((vial, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-pressed", "false");
+      button.style.setProperty("--fill", rgbCss(liquidColor(vial.value), 0.9));
+      button.innerHTML = `<span aria-hidden="true"></span>${vial.label}`;
+      button.addEventListener("click", () => chooseVial(i));
+      byId("vials").append(button);
+      return button;
+    });
+
     function update() {
-      const concentration = byId("concentration").valueAsNumber / 100;
-      const laser = byId("laser").valueAsNumber / 100;
+      const nextConcentration = byId("concentration").valueAsNumber / 100;
+      if (Math.abs(nextConcentration - concentration) > 0.001 && VIALS.some(v => Math.abs(v.value - nextConcentration) < 1e-9)) {
+        swap = { from: sceneConcentration, to: nextConcentration, start: performance.now() };
+      }
+      concentration = nextConcentration;
+      laser = byId("laser").valueAsNumber / 100;
+      if (laser > 0) lastLaser = laser;
+      slitWidth = byId("slit").valueAsNumber * 1e-6;
       const result = estimateSample(concentration, laser);
+      lastResult = result;
       const available = result.estimate !== undefined;
       byId("concentration-value").value = byId("concentration").value + "%";
       byId("laser-value").value = byId("laser").value + "%";
+      byId("slit-value").value = byId("slit").value + " µm";
       byId("estimate").textContent = available ? (result.estimate * 100).toFixed(2) + "%" : "—";
-      byId("estimate-note").textContent = available ? "농도 오차 " + (Math.abs(result.estimate - concentration) * 100).toFixed(2) + "%p" : "신호 부족";
+      byId("estimate-note").textContent = available ? "입력과의 차이 " + (Math.abs(result.estimate - concentration) * 100).toFixed(2) + "%p" : "신호 부족";
       byId("raw").textContent = result.raw.toFixed(4);
       byId("raw-note").textContent = "절대 오차 " + Math.abs(result.raw - result.truth).toFixed(4);
       byId("corrected").textContent = available ? result.corrected.toFixed(4) : "—";
       byId("corrected-note").textContent = available ? "절대 오차 " + Math.abs(result.corrected - result.truth).toFixed(4) : "신호 부족";
-
       const outOfRange = available && (result.estimate < 0 || result.estimate > 1);
       const warning = result.warning || (outOfRange ? "농도 추정값이 검량 범위 0–100%를 벗어났습니다." : "");
       const status = byId("status");
       status.dataset.warning = String(Boolean(warning));
       status.textContent = (warning ? warning + " " : "") + "모델의 참 투과율 " + result.truth.toFixed(4)
         + " · 참조 차분 전압 " + result.referenceDelta.toFixed(4) + " V";
-
+      vialButtons.forEach((button, i) => button.setAttribute("aria-pressed", String(Math.abs(VIALS[i].value - concentration) < 1e-9)));
+      byId("scene-sample-light").textContent = (laser * trueTransmission(concentration) * 100).toFixed(1) + "%";
+      byId("scene-reference-light").textContent = (laser * 100).toFixed(1) + "%";
+      byId("scope-note").textContent = available || result.referenceDelta > 0
+        ? `ON−OFF 평균 차분 · 시료 ${result.sampleDelta.toFixed(4)} V · 참조 ${result.referenceDelta.toFixed(4)} V · 주변광과 120 Hz 깜빡임은 차분에서 지워집니다.`
+        : "레이저가 꺼져 ON/OFF 차이가 없습니다.";
       drawCalibration(result);
       drawDiffraction(concentration);
-      sceneConcentration = concentration;
-      sceneLaser = laser;
-      refreshBeam();
+      renderInfo();
+      refreshStatus();
+      scene.dirty = true;
     }
 
+    function refreshStatus() {
+      byId("beam-toggle").textContent = beamPlaying ? "빛 움직임 일시정지" : "빛 움직임 재생";
+      byId("beam-toggle").setAttribute("aria-pressed", String(!beamPlaying));
+      byId("chop-toggle").setAttribute("aria-pressed", String(chopView));
+      const chip = byId("beam-status");
+      chip.textContent = laser <= 0 ? "레이저 꺼짐" : chopView ? "ON/OFF 변조 (느리게)" : beamPlaying ? "연속 표시 · 재생 중" : "일시정지";
+      chip.classList.toggle("warn", laser <= 0);
+    }
+
+    const VIEWS = {
+      home: () => scene.home,
+      front: () => ({ yaw: 0, pitch: 0.12, dist: 11, target: [0, 1.2, 0.4] }),
+      beam: () => ({ yaw: -1.35, pitch: 0.12, dist: 6.5, target: [P.cuvette, 1.35, 0] }),
+      top: () => ({ yaw: 0.001, pitch: 1.4, dist: 11.5, target: [0, 0.4, 0.4] }),
+    };
+    document.querySelectorAll("[data-view]").forEach(button => {
+      button.addEventListener("click", () => {
+        if (button.dataset.view === "home") select(null);
+        scene.setView(VIEWS[button.dataset.view]());
+      });
+    });
+    byId("zoom-in").addEventListener("click", () => scene.zoom(0.82));
+    byId("zoom-out").addEventListener("click", () => scene.zoom(1.22));
+    byId("beam-toggle").addEventListener("click", () => {
+      beamPlaying = !beamPlaying;
+      refreshStatus();
+    });
+    byId("chop-toggle").addEventListener("click", () => {
+      chopView = !chopView;
+      refreshStatus();
+      scene.dirty = true;
+    });
+    reducedMotion.addEventListener("change", event => {
+      if (event.matches) beamPlaying = false;
+      refreshStatus();
+    });
     byId("concentration").addEventListener("input", update);
     byId("laser").addEventListener("input", update);
+    byId("slit").addEventListener("input", update);
     byId("reset").addEventListener("click", () => {
       byId("concentration").value = byId("concentration").defaultValue;
       byId("laser").value = byId("laser").defaultValue;
+      byId("slit").value = byId("slit").defaultValue;
+      chopView = false;
       update();
     });
+
+    let previous = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, (now - previous) / 1000);
+      previous = now;
+      let changed = scene.update(dt);
+      if (beamPlaying && laser > 0) {
+        beamTime += dt;
+        changed = true;
+      }
+      if (swap) changed = true;
+      if (changed) {
+        drawBench(now);
+        drawScope();
+      }
+      requestAnimationFrame(loop);
+    }
+    window.addEventListener("resize", () => { scene.dirty = true; });
     update();
+    swap = null;
+    sceneConcentration = concentration;
+    drawScope();
+    requestAnimationFrame(loop);
   </script>
 </body>
 </html>
